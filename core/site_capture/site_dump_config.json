@@ -1,0 +1,20 @@
+{
+  "url": "https://example.com",
+  "out_dir": "site_dump",
+  "bundle_zip_name": "site_dump_bundle.zip",
+  "runner_python_name": "launch_site.py",
+  "runner_bat_name": "run_site.bat",
+  "runner_sh_name": "run_site.sh",
+  "max_wait_secs": 60,
+  "network_idle_secs": 2.0,
+  "extra_record_secs": 15.0,
+  "disable_cache": true,
+  "browser_binary": null,
+  "headless": null,
+  "open_browser_after_capture": false,
+  "zip_output": true,
+  "capture_screenshot": true,
+  "capture_storage": true,
+  "capture_console": true,
+  "capture_same_origin_iframes": true
+}
