@@ -1,0 +1,21 @@
+.
+./.git
+./SBS
+./SBS/Tasa pasiva
+./SBS/Tasa pasiva/script.py
+./SBS/Tasa pasiva/empaquetar.py
+./SBS/Tasa pasiva/empaquetar.bat
+./SBS/Tipo de cambio
+./SBS/Tipo de cambio/script.py
+./SBS/Tipo de cambio/empaquetar.py
+./SBS/Tipo de cambio/empaquetar.bat
+./core
+./core/site_capture
+./core/site_capture/run_site_dump.bat
+./core/site_capture/site_dump.py
+./core/site_capture/site_dump_config.json
+./git
+./git/autopush.sh
+./git/dump_filetree.sh
+./filetree.txt
+./README.md

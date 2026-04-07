@@ -7,6 +7,7 @@ Columnas: FECHA | CODIGO | MONEDA | Compra | Venta
 import os
 import sys
 import time
+import random
 import threading
 import subprocess
 from datetime import date, timedelta
@@ -22,7 +23,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import (
-    TimeoutException, NoSuchElementException, JavascriptException
+    TimeoutException, NoSuchElementException, JavascriptException,
+    StaleElementReferenceException
 )
 
 from bs4 import BeautifulSoup
@@ -36,7 +38,7 @@ from openpyxl.worksheet.table import Table, TableStyleInfo
 # CONSTANTES
 # ============================================================
 
-URL_BASE         = (
+URL_BASE        = (
     "https://www.sbs.gob.pe/app/pp/sistip_portal/paginas/publicacion/"
     "tipocambiopromedio.aspx"
 )
@@ -46,11 +48,10 @@ ID_BTN_CONSULTAR = "ctl00_cphContent_btnConsultar"
 ID_LBL_FECHA     = "ctl00_cphContent_lblFecha"
 ID_GRID          = "ctl00_cphContent_rgTipoCambio"
 
-TABLA_EXCEL      = "TipoCambioSBS"
-_SEG_POR_DIA     = 13
-_MAX_RETROCESO   = 45
+TABLA_EXCEL    = "TipoCambioSBS"
+_SEG_POR_DIA   = 13
+_MAX_RETROCESO = 45
 
-# Mapeo de nombres SBS a código ISO — incluye variantes ortográficas y monedas futuras
 _ISO: dict[str, str] = {
     "Dólar de N.A.":          "USD",
     "Dólar Estadounidense":   "USD",
@@ -92,16 +93,10 @@ _FMT_NUM    = "#,##0.0000"
 
 def _pascua(year: int) -> date:
     """Domingo de Pascua — algoritmo de Butcher."""
-    a = year % 19
-    b = year // 100
-    c = year % 100
-    d = b // 4
-    e = b % 4
-    f = (b + 8) // 25
-    g = (b - f + 1) // 3
+    a = year % 19; b = year // 100; c = year % 100
+    d = b // 4;  e = b % 4;  f = (b + 8) // 25;  g = (b - f + 1) // 3
     h = (19 * a + b - d - g + 15) % 30
-    i = c // 4
-    k = c % 4
+    i = c // 4;  k = c % 4
     l = (32 + 2 * e + 2 * i - h - k) % 7
     m = (a + 11 * h + 22 * l) // 451
     month = (h + l - 7 * m + 114) // 31
@@ -113,27 +108,16 @@ def _feriados_peru(year: int) -> frozenset[date]:
     """Feriados nacionales peruanos: fijos + Semana Santa."""
     pascua = _pascua(year)
     fijos = [
-        (1,  1),  # Año Nuevo
-        (5,  1),  # Día del Trabajo
-        (6,  7),  # Batalla de Arica y Día de la Bandera
-        (6, 29),  # San Pedro y San Pablo
-        (7, 23),  # Día de la Fuerza Aérea del Perú
-        (7, 28),  # Fiestas Patrias
-        (7, 29),  # Fiestas Patrias
-        (8,  6),  # Batalla de Junín
-        (8, 30),  # Santa Rosa de Lima
-        (10, 8),  # Combate de Angamos
-        (11, 1),  # Día de Todos los Santos
-        (12, 8),  # Inmaculada Concepción
-        (12, 9),  # Batalla de Ayacucho
-        (12, 25), # Navidad
+        (1,  1), (5,  1), (6,  7), (6, 29),
+        (7, 23), (7, 28), (7, 29), (8,  6),
+        (8, 30), (10, 8), (11, 1), (12, 8),
+        (12, 9), (12, 25),
     ]
     return frozenset(
         [date(year, m, d) for m, d in fijos]
-        + [pascua - timedelta(days=3),   # Jueves Santo
-           pascua - timedelta(days=2)]   # Viernes Santo
+        + [pascua - timedelta(days=3),  # Jueves Santo
+           pascua - timedelta(days=2)]  # Viernes Santo
     )
-
 
 # ============================================================
 # UTILES
@@ -164,6 +148,19 @@ def _normalizar_moneda(nombre: str) -> str:
     return _NOMBRE_USD if nombre == "Dólar de N.A." else nombre
 
 
+def _trimestre_anterior(hoy: date | None = None) -> tuple[date, date]:
+    """Devuelve (inicio, fin) del trimestre calendario inmediatamente anterior."""
+    if hoy is None:
+        hoy = date.today()
+    q = (hoy.month - 1) // 3   # 0=Q1 actual, 1=Q2, 2=Q3, 3=Q4
+    if q == 0:
+        return date(hoy.year - 1, 10, 1), date(hoy.year - 1, 12, 31)
+    starts = {1: (1, 1),  2: (4, 1),  3: (7, 1)}
+    ends   = {1: (3, 31), 2: (6, 30), 3: (9, 30)}
+    return (date(hoy.year, *starts[q]),
+            date(hoy.year, *ends[q]))
+
+
 # ============================================================
 # SCRAPING
 # ============================================================
@@ -187,6 +184,11 @@ def _crear_driver() -> webdriver.Chrome:
         {"source": "Object.defineProperty(navigator,'webdriver',{get:()=>undefined})"},
     )
     return drv
+
+
+def _esta_bloqueado(driver: webdriver.Chrome) -> bool:
+    """Detecta el iframe de bloqueo de Imperva/Incapsula (Error 15)."""
+    return '<iframe id="main-iframe"' in driver.page_source
 
 
 def _esperar_pagina_lista(driver: webdriver.Chrome, timeout: int = 25) -> bool:
@@ -241,8 +243,7 @@ def _set_fecha(driver: webdriver.Chrome, fecha: date) -> None:
 def _esperar_actualizacion(driver: webdriver.Chrome, label_anterior: str, timeout: int = 12) -> None:
     """
     Espera cualquier cambio en el label de fecha.
-    Detecta feriados rápidamente (~1 s) porque el servidor responde con una
-    fecha diferente en lugar de agotar el timeout completo.
+    Feriados responden en ~1 s con fecha distinta, sin agotar el timeout.
     """
     try:
         WebDriverWait(driver, timeout).until(
@@ -258,13 +259,14 @@ def _parsear_grid(driver: webdriver.Chrome) -> list[dict]:
     if not div:
         return []
     tabla = div.find("table", class_="rgMasterTable")
-    if not tabla:
-        return []
-    thead = tabla.find("thead")
-    if not thead:
+    if not tabla or not tabla.find("thead"):
         return []
 
-    headers = [th.get_text(strip=True) for th in thead.find_all("th") if th.get_text(strip=True)]
+    headers = [
+        th.get_text(strip=True)
+        for th in tabla.find("thead").find_all("th")
+        if th.get_text(strip=True)
+    ]
     if not headers:
         return []
 
@@ -286,6 +288,41 @@ def _limpiar_num(v: str) -> float | None:
         return None
 
 
+def _recuperar_de_bloqueo(
+    driver: webdriver.Chrome,
+    log_fn,
+    pausa_fn=None,
+) -> bool:
+    """
+    Intenta recuperar la sesión tras un bloqueo de Imperva.
+    Backoff: 45 s → 90 s → 180 s.  Retorna True si se recuperó.
+    Si pausa_fn está definida, ofrece al usuario intervenir manualmente
+    antes del tercer intento (útil para resolver captchas a mano).
+    """
+    esperas = [45, 90, 180]
+    for i, espera in enumerate(esperas):
+        log_fn(f"  [BLOQUEO] Esperando {espera}s antes de reintentar ({i+1}/3)...")
+        time.sleep(espera)
+        driver.get(URL_BASE)
+        time.sleep(3)
+        if _esperar_pagina_lista(driver, timeout=20):
+            if not _esta_bloqueado(driver):
+                _esperar_telerik(driver)
+                log_fn("  [OK] Sesión recuperada.")
+                return True
+        # Antes del último intento, ofrecer intervención manual si hay callback
+        if i == 1 and pausa_fn is not None:
+            pausa_fn()   # bloquea hasta que el usuario confirme
+            driver.get(URL_BASE)
+            time.sleep(3)
+            if _esperar_pagina_lista(driver, timeout=20) and not _esta_bloqueado(driver):
+                _esperar_telerik(driver)
+                log_fn("  [OK] Sesión recuperada tras intervención manual.")
+                return True
+    log_fn("  [ERROR] No fue posible recuperar la sesión. Fechas omitidas hasta el próximo reintento.")
+    return False
+
+
 def _consultar_fecha(
     driver: webdriver.Chrome,
     fecha: date,
@@ -296,35 +333,45 @@ def _consultar_fecha(
         driver.get(URL_BASE)
         time.sleep(2)
         if not _esperar_pagina_lista(driver):
-            log_fn("  [ERROR] La página no cargó. Verifica la conexión.")
+            log_fn("  [ERROR] La página no cargó.")
             return []
         _esperar_telerik(driver)
         log_fn("  Página lista.")
 
     _set_fecha(driver, fecha)
-    time.sleep(0.15)
+    time.sleep(random.uniform(0.4, 0.9))
 
     try:
         label_antes = driver.find_element(By.ID, ID_LBL_FECHA).text
     except NoSuchElementException:
         label_antes = ""
 
-    try:
-        btn = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.ID, ID_BTN_CONSULTAR))
-        )
-        driver.execute_script("arguments[0].click();", btn)
-    except (TimeoutException, NoSuchElementException):
-        log_fn("  [ERROR] No se pudo hacer clic en Consultar.")
-        return []
+    # Retry anti-stale: el UpdatePanel puede reemplazar el nodo entre la
+    # búsqueda del botón y el click si un refresh previo termina tarde
+    clicked = False
+    for _ in range(3):
+        try:
+            btn = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.ID, ID_BTN_CONSULTAR))
+            )
+            driver.execute_script("arguments[0].click();", btn)
+            clicked = True
+            break
+        except StaleElementReferenceException:
+            time.sleep(0.3)
+        except (TimeoutException, NoSuchElementException):
+            break
+
+    if not clicked:
+        return []   # el caller detectará el estado y decidirá
 
     _esperar_actualizacion(driver, label_antes)
-    time.sleep(0.2)
+    time.sleep(random.uniform(0.2, 0.5))
 
-    filas = _parsear_grid(driver)
-    if not filas:
-        log_fn("  Sin datos para esta fecha.")
-    return filas
+    if _esta_bloqueado(driver):
+        return []   # señal al caller para activar recovery
+
+    return _parsear_grid(driver)
 
 
 def _buscar_semillas(
@@ -334,24 +381,24 @@ def _buscar_semillas(
     log_fn,
 ) -> dict[str, dict]:
     """
-    Para monedas con NaN al inicio del rango, busca su último valor real
-    anterior a fecha_inicio (hasta _MAX_RETROCESO días atrás).
-    Una sola consulta por fecha cubre todas las monedas pendientes.
+    Para monedas con Compra=NaN en su primera fila, busca el último valor real
+    previo a fecha_inicio. Una consulta por fecha hábil cubre todas las pendientes.
     """
     semillas: dict[str, dict] = {}
     pendientes: set[str] = set()
 
     for moneda in df_raw["MONEDA"].unique():
-        sub = df_raw[df_raw["MONEDA"] == moneda].sort_values("FECHA")
-        primera = sub.iloc[0]
-        if pd.isna(primera["Compra"]) or pd.isna(primera["Venta"]):
+        sub      = df_raw[df_raw["MONEDA"] == moneda].sort_values("FECHA")
+        primera  = sub.iloc[0]
+        # Buscar semilla solo cuando Compra (el valor más crítico) está ausente
+        if pd.isna(primera["Compra"]):
             pendientes.add(moneda)
             semillas[moneda] = {"Compra": None, "Venta": None}
 
     if not pendientes:
         return {}
 
-    log_fn(f"  Buscando valor base para: {', '.join(sorted(pendientes))}...")
+    log_fn(f"  Buscando valor base anterior para: {', '.join(sorted(pendientes))}...")
 
     fecha = fecha_inicio - timedelta(days=1)
     for _ in range(_MAX_RETROCESO):
@@ -368,18 +415,18 @@ def _buscar_semillas(
             if moneda not in pendientes:
                 continue
             compra = _limpiar_num(fila.get("COMPRA (S/)", ""))
-            venta  = _limpiar_num(fila.get("VENTA (S/)", ""))
+            venta  = _limpiar_num(fila.get("VENTA (S/)",  ""))
             if semillas[moneda]["Compra"] is None and compra is not None:
                 semillas[moneda]["Compra"] = compra
             if semillas[moneda]["Venta"] is None and venta is not None:
                 semillas[moneda]["Venta"] = venta
-            if semillas[moneda]["Compra"] is not None and semillas[moneda]["Venta"] is not None:
+            if semillas[moneda]["Compra"] is not None:
                 pendientes.discard(moneda)
 
         if filas:
-            cubiertas = sorted(m for m in semillas if m not in pendientes and semillas[m]["Compra"] is not None)
+            cubiertas = sorted(m for m in semillas if m not in pendientes)
             if cubiertas:
-                log_fn(f"  Valor base al {fecha.strftime('%d/%m/%Y')}: {', '.join(cubiertas)}")
+                log_fn(f"  Valor base ({fecha.strftime('%d/%m/%Y')}): {', '.join(cubiertas)}")
 
         fecha -= timedelta(days=1)
 
@@ -392,6 +439,8 @@ def scrape_rango(
     log_fn,
     cancelar_fn,
     progreso_fn=None,
+    estado_fn=None,
+    pausa_manual_fn=None,   # callback sin args: bloquea hasta que el usuario confirme reintentar
 ) -> tuple[pd.DataFrame, dict]:
     acum        = []
     driver      = _crear_driver()
@@ -399,47 +448,83 @@ def scrape_rango(
     t0          = time.time()
     semillas    = {}
 
-    # Feriados para todos los años del rango
     feriados: set[date] = set()
     for y in range(fecha_inicio.year, fecha_fin.year + 1):
         feriados.update(_feriados_peru(y))
 
     try:
-        fechas = [fecha_inicio + timedelta(days=i)
-                  for i in range((fecha_fin - fecha_inicio).days + 1)]
+        fechas    = [fecha_inicio + timedelta(days=i)
+                     for i in range((fecha_fin - fecha_inicio).days + 1)]
+        total     = len(fechas)           # días calendario totales
+        consultas = sum(1 for f in fechas if f.weekday() < 5 and f not in feriados)
+        contador  = 0
+        consultadas = 0
 
-        # Días a consultar: hábiles y no feriados
-        fechas_consulta   = [f for f in fechas if f.weekday() < 5 and f not in feriados]
-        total             = len(fechas_consulta)
-        procesados        = 0
+        bloqueado    = False    # True si la sesión está actualmente bloqueada
+        n_consultadas = 0       # para la pausa periódica anti-detección
 
         for fecha in fechas:
             if cancelar_fn():
                 log_fn("Operación cancelada.")
                 break
-            if fecha.weekday() >= 5:
-                continue
-            if fecha in feriados:
-                continue   # El ffill cubrirá este día
 
-            procesados += 1
-            log_fn(f"[{procesados}/{total}] {fecha.strftime('%d/%m/%Y')}")
+            contador += 1
+            es_fin_semana = fecha.weekday() >= 5
+            es_feriado    = fecha in feriados
+
+            if es_fin_semana or es_feriado:
+                if progreso_fn:
+                    progreso_fn(int(contador / total * 100))
+                continue
+
+            consultadas    += 1
+            n_consultadas  += 1
+            fecha_str       = fecha.strftime("%d/%m/%Y")
+
+            if estado_fn:
+                estado_fn(f"[{contador}/{total}]  {fecha_str}")
+
+            # Pausa periódica cada 80 consultas para reducir señales a Imperva
+            if n_consultadas > 1 and n_consultadas % 80 == 0:
+                pausa = random.randint(8, 15)
+                log_fn(f"  [PAUSA] Descanso de {pausa}s para reducir detección...")
+                time.sleep(pausa)
 
             filas = _consultar_fecha(driver, fecha, primera_vez, log_fn)
             primera_vez = False
 
-            for fila in filas:
-                moneda = _normalizar_moneda(fila.get("MONEDA", ""))
-                acum.append({
-                    "FECHA":  fecha,
-                    "CODIGO": _ISO.get(moneda, "???"),
-                    "MONEDA": moneda,
-                    "Compra": _limpiar_num(fila.get("COMPRA (S/)", "")),
-                    "Venta":  _limpiar_num(fila.get("VENTA (S/)", "")),
-                })
+            # Si no hubo filas, puede ser bloqueo o fecha sin datos real
+            if not filas:
+                if _esta_bloqueado(driver) or not bloqueado:
+                    # Solo intentar recovery si aún no estábamos en estado bloqueado
+                    # o si la página confirma bloqueo ahora
+                    if _esta_bloqueado(driver):
+                        log_fn(f"  [BLOQUEO] Detectado en {fecha_str}.")
+                        ok = _recuperar_de_bloqueo(driver, log_fn, pausa_manual_fn)
+                        bloqueado = not ok
+                        if ok:
+                            # Reintentar la misma fecha tras la recuperación
+                            filas = _consultar_fecha(driver, fecha, False, log_fn)
+                    else:
+                        bloqueado = False
 
-            if progreso_fn and total > 0:
-                progreso_fn(int(procesados / total * 100))
+            if filas:
+                bloqueado = False
+                for fila in filas:
+                    moneda = _normalizar_moneda(fila.get("MONEDA", ""))
+                    acum.append({
+                        "FECHA":  fecha,
+                        "CODIGO": _ISO.get(moneda, "???"),
+                        "MONEDA": moneda,
+                        "Compra": _limpiar_num(fila.get("COMPRA (S/)", "")),
+                        "Venta":  _limpiar_num(fila.get("VENTA (S/)", "")),
+                    })
+                log_fn(f"✓  {fecha_str}")
+            else:
+                log_fn(f"⚠  {fecha_str}  (sin datos)")
+
+            if progreso_fn:
+                progreso_fn(int(contador / total * 100))
 
         if acum and not cancelar_fn():
             df_temp  = pd.DataFrame(acum)
@@ -467,7 +552,7 @@ def aplicar_ffill(
 ) -> pd.DataFrame:
     """
     Reindexa a todos los días del rango y aplica ffill por moneda.
-    Inyecta una fila semilla previa al rango para que el inicio no quede vacío.
+    Inyecta fila semilla previa a fi para cubrir el bloque inicial sin datos.
     """
     if df.empty:
         return df
@@ -482,21 +567,27 @@ def aplicar_ffill(
         sub = sub.set_index("FECHA")
         sub.index = pd.DatetimeIndex(sub.index)
 
+        # Inyectar semilla si fue encontrada y tiene al menos Compra
         if semillas and moneda in semillas:
             seed = semillas[moneda]
-            sub.loc[fecha_semilla] = {
-                "CODIGO": _ISO.get(moneda, "???"),
-                "MONEDA": moneda,
-                "Compra": seed.get("Compra"),
-                "Venta":  seed.get("Venta"),
-            }
+            if seed.get("Compra") is not None:
+                sub.loc[fecha_semilla] = {
+                    "CODIGO": _ISO.get(moneda, "???"),
+                    "MONEDA": moneda,
+                    "Compra": seed["Compra"],
+                    "Venta":  seed.get("Venta"),
+                }
 
         rango_ext = pd.DatetimeIndex([fecha_semilla] + list(todos_dias))
         sub = sub.reindex(rango_ext.sort_values())
         sub["CODIGO"] = sub["CODIGO"].ffill().bfill()
         sub["MONEDA"] = sub["MONEDA"].ffill().bfill()
-        sub["Compra"] = sub["Compra"].ffill().bfill()
-        sub["Venta"]  = sub["Venta"].ffill().bfill()
+        # Solo rellenar si existe al menos un valor real; ausencias estructurales
+        # de SBS (ej. Peso Chileno sin Venta) se dejan como NaN intencionalmente
+        if sub["Compra"].notna().any():
+            sub["Compra"] = sub["Compra"].ffill().bfill()
+        if sub["Venta"].notna().any():
+            sub["Venta"] = sub["Venta"].ffill().bfill()
 
         sub = sub.loc[todos_dias]
         sub.index.name = "FECHA"
@@ -528,7 +619,7 @@ def exportar_excel(df: pd.DataFrame, ruta: str) -> None:
     wb.remove(wb.active)
     ws = wb.create_sheet(title="TipoCambio")
 
-    cols       = list(df.columns)   # FECHA | CODIGO | MONEDA | Compra | Venta
+    cols       = list(df.columns)
     idx_fecha  = cols.index("FECHA")  + 1
     idx_compra = cols.index("Compra") + 1
     idx_venta  = cols.index("Venta")  + 1
@@ -583,8 +674,9 @@ class App(tk.Tk):
         super().__init__()
         self.title("Tipo de Cambio SBS - Extractor")
         self.resizable(False, False)
-        self._cancelar = False
-        self._hilo     = None
+        self._cancelar  = False
+        self._hilo      = None
+        self._t_inicio  = 0.0
         self._construir_ui()
         self.protocol("WM_DELETE_WINDOW", self._cerrar_ventana)
 
@@ -592,30 +684,25 @@ class App(tk.Tk):
 
     def _construir_ui(self):
         PAD = {"padx": 10, "pady": 6}
+        fi_def, ff_def = _trimestre_anterior()
 
         # --- Rango de fechas ---
         frm_f = ttk.LabelFrame(self, text="Rango de fechas")
         frm_f.grid(row=0, column=0, sticky="ew", **PAD)
-        frm_f.columnconfigure(1, weight=1)
 
-        # Vars separadas para cada componente de fecha
-        hoy = date.today()
-        self._vi_d = tk.StringVar(value=f"{hoy.day:02d}")
-        self._vi_m = tk.StringVar(value=f"{hoy.month:02d}")
-        self._vi_y = tk.StringVar(value=str(hoy.year))
-        self._vf_d = tk.StringVar(value=f"{hoy.day:02d}")
-        self._vf_m = tk.StringVar(value=f"{hoy.month:02d}")
-        self._vf_y = tk.StringVar(value=str(hoy.year))
+        self._vi_d = tk.StringVar(value=f"{fi_def.day:02d}")
+        self._vi_m = tk.StringVar(value=f"{fi_def.month:02d}")
+        self._vi_y = tk.StringVar(value=str(fi_def.year))
+        self._vf_d = tk.StringVar(value=f"{ff_def.day:02d}")
+        self._vf_m = tk.StringVar(value=f"{ff_def.month:02d}")
+        self._vf_y = tk.StringVar(value=str(ff_def.year))
 
         ttk.Label(frm_f, text="Fecha inicio:").grid(row=0, column=0, sticky="w", padx=8, pady=4)
-        ei_d, ei_m, ei_y = self._campos_fecha(frm_f, row=0, col=1,
-                                               vd=self._vi_d, vm=self._vi_m, vy=self._vi_y)
+        ei_d, ei_m, ei_y = self._campos_fecha(frm_f, 0, 1, self._vi_d, self._vi_m, self._vi_y)
 
         ttk.Label(frm_f, text="Fecha fin:").grid(row=1, column=0, sticky="w", padx=8, pady=4)
-        ef_d, ef_m, ef_y = self._campos_fecha(frm_f, row=1, col=1,
-                                               vd=self._vf_d, vm=self._vf_m, vy=self._vf_y)
+        ef_d, ef_m, ef_y = self._campos_fecha(frm_f, 1, 1, self._vf_d, self._vf_m, self._vf_y)
 
-        # Auto-avance entre campos
         self._auto_avanzar(self._vi_d, 2, ei_m)
         self._auto_avanzar(self._vi_m, 2, ei_y)
         self._auto_avanzar(self._vi_y, 4, ef_d)
@@ -667,19 +754,31 @@ class App(tk.Tk):
             row=0, column=1, sticky="w", padx=8, pady=4)
 
         self._var_ffill = tk.BooleanVar(value=True)
-        ttk.Checkbutton(frm_o, text="Incluir fines de semana y feriados",
-                        variable=self._var_ffill).grid(
-            row=1, column=0, columnspan=2, sticky="w", padx=8, pady=(0, 6))
+        ttk.Checkbutton(
+            frm_o,
+            text="Llenar datos faltantes en fines de semana y feriados por el último valor disponible",
+            variable=self._var_ffill,
+        ).grid(row=1, column=0, columnspan=2, sticky="w", padx=8, pady=(0, 6))
 
         # --- Progreso ---
         frm_l = ttk.LabelFrame(self, text="Progreso")
         frm_l.grid(row=3, column=0, sticky="ew", **PAD)
         frm_l.columnconfigure(0, weight=1)
 
+        # Barra de estado: [contador/fecha] a la izquierda, [timer] a la derecha
+        frm_st = ttk.Frame(frm_l)
+        frm_st.grid(row=0, column=0, columnspan=2, sticky="ew", padx=6, pady=(4, 0))
+        frm_st.columnconfigure(0, weight=1)
+
         self._var_estado = tk.StringVar(value="")
-        ttk.Label(frm_l, textvariable=self._var_estado,
+        ttk.Label(frm_st, textvariable=self._var_estado,
                   foreground="#1F4E79", font=("Segoe UI", 8)).grid(
-            row=0, column=0, columnspan=2, sticky="w", padx=8, pady=(4, 0))
+            row=0, column=0, sticky="w")
+
+        self._var_timer = tk.StringVar(value="")
+        ttk.Label(frm_st, textvariable=self._var_timer,
+                  foreground="#888888", font=("Consolas", 8)).grid(
+            row=0, column=1, sticky="e")
 
         self._log = scrolledtext.ScrolledText(
             frm_l, height=11, width=70, state="disabled",
@@ -691,7 +790,7 @@ class App(tk.Tk):
                    command=self._limpiar_log).grid(
             row=2, column=1, sticky="e", padx=8, pady=(0, 4))
 
-        # --- Barra ---
+        # --- Barra de progreso ---
         self._barra = ttk.Progressbar(self, mode="determinate", length=460, maximum=100)
         self._barra.grid(row=4, column=0, padx=10, pady=4, sticky="ew")
 
@@ -707,7 +806,6 @@ class App(tk.Tk):
         self.columnconfigure(0, weight=1)
 
     def _campos_fecha(self, parent, row, col, vd, vm, vy):
-        """Crea tres Entry (DD / MM / AAAA) con validación de dígitos."""
         vcmd2 = (self.register(lambda s: s == "" or (s.isdigit() and len(s) <= 2)), "%P")
         vcmd4 = (self.register(lambda s: s == "" or (s.isdigit() and len(s) <= 4)), "%P")
 
@@ -726,7 +824,6 @@ class App(tk.Tk):
         return ent_d, ent_m, ent_y
 
     def _auto_avanzar(self, var: tk.StringVar, max_len: int, siguiente: ttk.Entry):
-        """Mueve el foco al siguiente campo cuando el actual está completo."""
         def _check(*_):
             v = var.get()
             if len(v) == max_len and v.isdigit():
@@ -739,27 +836,19 @@ class App(tk.Tk):
     def _pfecha(self, vd, vm, vy) -> date | None:
         try:
             return date(int(vy.get()), int(vm.get()), int(vd.get()))
-        except (ValueError, OverflowError, TypeError):
+        except (ValueError, OverflowError):
             return None
-
-    def _pfecha_con_error(self, vd, vm, vy, nombre: str) -> date | None:
-        r = self._pfecha(vd, vm, vy)
-        if r is None:
-            messagebox.showerror(
-                "Fecha inválida",
-                f"La fecha {nombre} no es válida.\n"
-                f"Verifica que día, mes y año sean correctos.",
-            )
-        return r
 
     def _actualizar_info(self):
         fi = self._pfecha(self._vi_d, self._vi_m, self._vi_y)
         ff = self._pfecha(self._vf_d, self._vf_m, self._vf_y)
-        if fi and ff and fi <= ff:
-            t = (ff - fi).days + 1
-            self._var_info.set(f"{t} días en el rango")
-        elif fi and ff and fi > ff:
-            self._var_info.set("⚠ La fecha inicio es posterior a la fecha fin")
+        if fi and ff:
+            if fi > ff:
+                self._var_info.set("⚠  La fecha inicio es posterior a la fecha fin")
+            else:
+                t   = (ff - fi).days + 1
+                est = _fmt_duracion(_dias_habiles(fi, ff) * _SEG_POR_DIA)
+                self._var_info.set(f"{t} días en el rango  |  Duración aprox.: {est}")
         else:
             self._var_info.set("")
 
@@ -798,6 +887,13 @@ class App(tk.Tk):
     def _set_progreso(self, v: int):
         self.after(0, lambda: self._barra.configure(value=v))
 
+    def _tick_timer(self):
+        if self._hilo and self._hilo.is_alive():
+            elapsed = int(time.time() - self._t_inicio)
+            m, s = divmod(elapsed, 60)
+            self._var_timer.set(f"{m:02d}:{s:02d}")
+            self.after(1000, self._tick_timer)
+
     def _set_controles(self, ejecutando: bool):
         ej = "disabled" if ejecutando else "normal"
         ca = "normal"   if ejecutando else "disabled"
@@ -813,6 +909,32 @@ class App(tk.Tk):
         self._cancelar = True
         self._log_msg(">>> Cancelando...")
 
+    def _pedir_reintento_manual(self):
+        """
+        Llamado por scrape_rango cuando el backoff automático no logró recuperar la sesión.
+        Muestra un diálogo y bloquea hasta que el usuario resuelva el captcha en Chrome
+        y confirme que puede continuar, o elija cancelar.
+        """
+        continuar = [False]
+        ev = threading.Event()
+
+        def _mostrar():
+            resp = messagebox.askyesno(
+                "Bloqueo de seguridad",
+                "La página SBS está bloqueando el acceso.\n\n"
+                "En la ventana de Chrome, recarga la página manualmente "
+                "y resuelve el captcha si aparece.\n\n"
+                "Haz clic en Sí cuando la página esté lista para continuar, "
+                "o en No para cancelar.",
+            )
+            continuar[0] = resp
+            if not resp:
+                self._cancelar = True
+            ev.set()
+
+        self.after(0, _mostrar)
+        ev.wait()   # bloquea el hilo de scraping hasta que el usuario responda
+
     def _cerrar_ventana(self):
         if self._hilo and self._hilo.is_alive():
             if not messagebox.askyesno(
@@ -823,22 +945,22 @@ class App(tk.Tk):
                 return
         self.destroy()
 
-    def _log_con_estado(self, texto: str):
-        self._log_msg(texto)
-        if texto.startswith("["):
-            self._set_estado(texto.strip())
-
     # ---- Ejecución ----
 
     def _iniciar(self):
-        fi = self._pfecha_con_error(self._vi_d, self._vi_m, self._vi_y, "inicio")
-        ff = self._pfecha_con_error(self._vf_d, self._vf_m, self._vf_y, "fin")
-        if fi is None or ff is None:
+        fi = self._pfecha(self._vi_d, self._vi_m, self._vi_y)
+        ff = self._pfecha(self._vf_d, self._vf_m, self._vf_y)
+
+        if fi is None:
+            messagebox.showerror("Fecha inválida", "La fecha de inicio no es válida.")
+            return
+        if ff is None:
+            messagebox.showerror("Fecha inválida", "La fecha fin no es válida.")
             return
         if fi > ff:
             messagebox.showerror(
                 "Rango inválido",
-                f"La fecha de inicio ({fi.strftime('%d/%m/%Y')}) es posterior "
+                f"La fecha inicio ({fi.strftime('%d/%m/%Y')}) es posterior "
                 f"a la fecha fin ({ff.strftime('%d/%m/%Y')}).",
             )
             return
@@ -856,19 +978,46 @@ class App(tk.Tk):
             else:
                 return
 
-        h    = _dias_habiles(fi, ff)
-        est  = _fmt_duracion(h * _SEG_POR_DIA)
         ruta = str(cp / _nombre_archivo(fi, ff))
+
+        # Conflicto de archivo existente
+        if Path(ruta).exists():
+            resp = messagebox.askyesnocancel(
+                "Archivo ya existe",
+                f"'{Path(ruta).name}' ya existe en la carpeta seleccionada.\n\n"
+                "Sí       → Sobreescribir\n"
+                "No       → Elegir otro nombre\n"
+                "Cancelar → Cancelar la operación",
+            )
+            if resp is None:
+                return
+            if resp is False:
+                nueva = filedialog.asksaveasfilename(
+                    initialdir=str(cp),
+                    initialfile=Path(ruta).name,
+                    defaultextension=".xlsx",
+                    filetypes=[("Excel", "*.xlsx")],
+                    title="Guardar como",
+                )
+                if not nueva:
+                    return
+                ruta = nueva
+
+        est = _fmt_duracion(_dias_habiles(fi, ff) * _SEG_POR_DIA)
 
         self._cancelar = False
         self._set_controles(ejecutando=True)
         self._set_progreso(0)
+        self._var_timer.set("00:00")
 
         self._log_msg("=" * 55)
         self._log_msg(f"Inicio: {fi.strftime('%d/%m/%Y')}  |  Fin: {ff.strftime('%d/%m/%Y')}")
         self._log_msg(f"Duración estimada: {est}  |  Archivo: {Path(ruta).name}")
         self._log_msg("=" * 55)
         self._log_msg("Chrome se abrirá. No lo cierres durante el proceso.")
+
+        self._t_inicio = time.time()
+        self.after(1000, self._tick_timer)
 
         self._hilo = threading.Thread(
             target=self._ejecutar_hilo,
@@ -881,9 +1030,11 @@ class App(tk.Tk):
         try:
             df, semillas = scrape_rango(
                 fi, ff,
-                log_fn=self._log_con_estado,
+                log_fn=self._log_msg,
                 cancelar_fn=lambda: self._cancelar,
                 progreso_fn=self._set_progreso,
+                estado_fn=self._set_estado,
+                pausa_manual_fn=self._pedir_reintento_manual,
             )
 
             if self._cancelar:
