@@ -29,6 +29,7 @@ python scripts/sync_passive_rates.py --tipos B C F R --desde 2026-09-01 --hasta 
 python scripts/sync_fund_values.py --desde 2026-09-01 --hasta 2026-09-30
 python scripts/sync_risk_ratings.py
 python scripts/sync_deposit_universe.py
+python scripts/sync_passive_benchmarks.py --desde 2026-10-05 --hasta 2026-10-06
 ```
 
 Las fechas son parámetros de ejemplo. Use `--help` para consultar las opciones
@@ -49,6 +50,7 @@ fuentes-sync-universe --help
 | Fuente | Acceso | Estado |
 | --- | --- | --- |
 | SBS tasas pasivas B/C/F/R | `source("pe.sbs.tasas_pasivas")` | Implementado; B/F diario, C/R mensual |
+| SBS referencias de tasas pasivas | `source("pe.sbs.tasas_pasivas_mercado")` | TIPMN/TIPMEX y FTIPMN/FTIPMEX; promedios por producto desde tasas locales |
 | SBS universo de depósitos | `source("pe.sbs.universo_depositos")` | Implementado; capturas fechadas y correspondencias locales |
 | SMV valores cuota | `source("pe.smv.fondos_mutuos.valores_cuota")` | Implementado; capturas e histórico EVCP, todos los fondos y series |
 | SBS clasificaciones históricas | `source("pe.sbs.clasificaciones_riesgo")` | Implementado; HTML semestral, sin PDF/XLS |
@@ -61,6 +63,9 @@ descarga reciente. Las pruebas locales no consultan SBS ni SMV.
 El [universo de depósitos](docs/sbs-deposit-universe.md) incluye un catálogo de
 identidades internas y un reporte Excel de correspondencias con tasas y
 clasificaciones. No determina elegibilidad regulatoria.
+
+Las [referencias de tasas pasivas](docs/sbs-passive-benchmarks.md) conservan
+separadas las bases sobre saldos y flujos y las ventanas diarias y mensuales.
 
 ## Uso desde Automatizaciones
 

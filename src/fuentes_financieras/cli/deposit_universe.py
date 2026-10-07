@@ -23,6 +23,11 @@ LABELS = {
     'first_observed': 'Primera observación', 'last_observed': 'Última observación',
     'previous_period': 'Observación anterior', 'change': 'Cambio observado',
     'alias': 'Nombre equivalente', 'valid_from': 'Desde', 'valid_to': 'Hasta',
+    'frequency': 'Frecuencia', 'metric': 'Indicador o producto', 'currency': 'Moneda',
+    'rate': 'Tasa (%)', 'unit': 'Unidad', 'basis': 'Base',
+    'observation_window': 'Ventana de observación', 'entity_scope': 'Grupo de entidades',
+    'reference_kind': 'Tipo de referencia', 'methodology_url': 'Metodología',
+    'table_kind': 'Tipo de cuadro', 'person_type': 'Tipo de persona',
 }
 
 

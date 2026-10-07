@@ -17,6 +17,15 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.sbs.tasas_pasivas_mercado": DatasetSpec(
+        dataset_id="pe.sbs.tasas_pasivas_mercado",
+        provider_class="fuentes_financieras.providers.sbs.passive_market:PassiveMarketProvider",
+        title="SBS - Tasas pasivas de mercado sobre saldos y flujos",
+        country="PE", organization="SBS", frequency="daily",
+        storage_path="peru/sbs/tasas_pasivas_mercado",
+        network_transport="curl_cffi/chrome + ASP.NET WebForms",
+        notes="TIPMN/TIPMEX sobre saldos B+F; FTIPMN/FTIPMEX sobre flujos B de 30 días útiles.",
+    ),
     "pe.sbs.universo_depositos": DatasetSpec(
         dataset_id="pe.sbs.universo_depositos",
         provider_class="fuentes_financieras.providers.sbs.deposit_universe:DepositUniverseProvider",
