@@ -1,7 +1,8 @@
 # webscrapper
 
 Scrapers de fuentes financieras para FUENTES. El paquete compartido `fuentes_financieras`
-se instala desde este repositorio; los scripts históricos en `SBS/` siguen disponibles.
+se instala desde este repositorio; el ejecutor antiguo de tasas pasivas en `SBS/` se reemplaza por el proveedor nuevo.
+Los scripts de tipo de cambio existentes siguen disponibles.
 
 ## Instalación
 
@@ -92,3 +93,24 @@ Base: `fuentes_financieras_codigo_CORREGIDO_V5.zip` (5 de octubre de 2026).
 Se añade el extractor de `fuentes_financieras_clasificaciones_historico_v2.zip`
 (6 de octubre de 2026), integrando sus cambios de esquema sin reemplazar las
 validaciones de caché, rutas relativas ni lectura por particiones de la base V5.
+
+## Tasas pasivas SBS: reemplazo del ejecutor antiguo
+
+El archivo `SBS/Tasa pasiva/script.py` ahora utiliza `fuentes_financieras`, con
+`curl_cffi`, estado WebForms y caché Parquet. Se reemplaza la interfaz Tkinter
+anterior por ejecución parametrizada en consola, sin Selenium.
+
+Desde la raíz del repositorio:
+
+```powershell
+python "SBS/Tasa pasiva/script.py" --tipos B C F R --desde 2026-09-01 --hasta 2026-09-30 --excel tasas_pasivas.xlsx
+```
+
+El ejecutor instala únicamente dependencias faltantes o incompatibles usando
+el mismo intérprete. También puede usarse `python -m fuentes_financieras.cli_rates`
+una vez instalado el paquete. `--load-only` consulta exclusivamente datos locales;
+`--force` solicita una revalidación explícita. Una sincronización incompleta
+finaliza con código 1 y no exporta un Excel que parezca completo.
+
+`empaquetar.py` construye un ejecutable de consola con el proveedor nuevo en
+un entorno aislado. La compilación del ejecutable no se ha validado en Windows.

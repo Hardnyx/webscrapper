@@ -11,13 +11,15 @@ dependencies = [
     "pandas>=2.1,<4", "numpy>=1.26,<3", "pyarrow>=15,<24",
     "beautifulsoup4>=4.12,<5", "lxml>=5,<7", "requests>=2.31,<3",
     "truststore>=0.10,<1", "curl_cffi>=0.16,<1", "certifi>=2024.2.2",
-    "openpyxl>=3.1,<4", "xlrd>=2,<3",
+    "openpyxl>=3.1,<4", "xlrd>=2,<3", "packaging>=24,<27",
+    "tzdata>=2024.1",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10"]
 
 [project.scripts]
+fuentes-sync-rates = "fuentes_financieras.cli_rates:main"
 fuentes-sync-smv = "fuentes_financieras.cli_smv:main"
 
 [tool.setuptools.packages.find]
