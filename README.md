@@ -1,6 +1,6 @@
 # webscrapper
 
-Fuentes financieras para FUENTES, con extracción, caché y almacenamiento compartidos
+Biblioteca personal de fuentes financieras, con extracción, caché y almacenamiento compartidos
 mediante el paquete Python `fuentes_financieras`.
 
 ## Organización
@@ -28,6 +28,7 @@ Desde la raíz del repositorio:
 python scripts/sync_passive_rates.py --tipos B C F R --desde 2026-09-01 --hasta 2026-09-30 --excel outputs/tasas_pasivas.xlsx
 python scripts/sync_fund_values.py --desde 2026-09-01 --hasta 2026-09-30
 python scripts/sync_risk_ratings.py
+python scripts/sync_deposit_universe.py
 ```
 
 Las fechas son parámetros de ejemplo. Use `--help` para consultar las opciones
@@ -40,6 +41,7 @@ python -m pip install -e .
 fuentes-sync-rates --help
 fuentes-sync-smv --help
 fuentes-sync-ratings --help
+fuentes-sync-universe --help
 ```
 
 ## Fuentes
@@ -47,6 +49,7 @@ fuentes-sync-ratings --help
 | Fuente | Acceso | Estado |
 | --- | --- | --- |
 | SBS tasas pasivas B/C/F/R | `source("pe.sbs.tasas_pasivas")` | Implementado; B/F diario, C/R mensual |
+| SBS universo de depósitos | `source("pe.sbs.universo_depositos")` | Implementado; capturas fechadas y correspondencias locales |
 | SMV valores cuota | `source("pe.smv.fondos_mutuos.valores_cuota")` | Implementado; capturas e histórico EVCP, todos los fondos y series |
 | SBS clasificaciones históricas | `source("pe.sbs.clasificaciones_riesgo")` | Implementado; HTML semestral, sin PDF/XLS |
 | SBS tipo de cambio contable USD/PEN | `providers.sbs.accounting_exchange_rate` | Implementado; funciones propias |
@@ -54,6 +57,10 @@ fuentes-sync-ratings --help
 
 La implementación disponible y la presencia en el catálogo no certifican una
 descarga reciente. Las pruebas locales no consultan SBS ni SMV.
+
+El [universo de depósitos](docs/sbs-deposit-universe.md) incluye un catálogo de
+identidades internas y un reporte Excel de correspondencias con tasas y
+clasificaciones. No determina elegibilidad regulatoria.
 
 ## Uso desde Automatizaciones
 

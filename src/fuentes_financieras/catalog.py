@@ -17,6 +17,15 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.sbs.universo_depositos": DatasetSpec(
+        dataset_id="pe.sbs.universo_depositos",
+        provider_class="fuentes_financieras.providers.sbs.deposit_universe:DepositUniverseProvider",
+        title="SBS - Universo de entidades autorizadas a captar depósitos",
+        country="PE", organization="SBS", frequency="snapshot",
+        storage_path="peru/sbs/universo_depositos",
+        network_transport="curl_cffi/chrome + HTML",
+        notes="Observaciones del universo vigente; no reconstruye autorizaciones históricas.",
+    ),
     "pe.sbs.clasificaciones_riesgo": DatasetSpec(
         dataset_id="pe.sbs.clasificaciones_riesgo",
         provider_class="fuentes_financieras.providers.sbs.clasificaciones_riesgo:RiskRatingsProvider",

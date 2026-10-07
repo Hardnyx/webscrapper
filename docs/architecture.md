@@ -7,7 +7,7 @@
 | Ubicación | Responsabilidad |
 | --- | --- |
 | `api.py`, `catalog.py`, `registry.py` | API pública, catálogo y resolución de proveedores |
-| `providers/sbs/` | Tasas pasivas, clasificaciones, tipo de cambio contable y adaptador de curva soberana |
+| `providers/sbs/` | Universo de depósitos, tasas pasivas, clasificaciones, tipo de cambio contable y adaptador de curva soberana |
 | `providers/smv/` | Valores cuota, descubrimiento, capturas e histórico |
 | `transports/` | Clientes HTTP reutilizables |
 | `provider.py`, `storage.py`, `runtime.py` | Contrato, caché, manifiestos y ubicación de los datos |
@@ -33,6 +33,7 @@ se utiliza fuera de Automatizaciones.
 | --- | --- |
 | `data/sources/` | Particiones canónicas, respuestas y manifiestos de fuentes |
 | `outputs/risk_ratings/` | Resumen y reporte de validación del histórico de clasificaciones |
+| `outputs/deposit_universe/` | Universo, identidades y correspondencias con datasets locales |
 | `outputs/site_capture/` | Capturas y recursos de sitios |
 | `outputs/` | Exportaciones y otros resultados |
 | `dist/` | Ejecutables generados |
@@ -41,6 +42,12 @@ Las particiones se verifican contra sus hashes antes de reutilizarse. Los
 manifiestos conservan rutas relativas para permitir mover los almacenes. Una
 migración de contrato de clasificaciones puede actualizar el esquema sin
 eliminar los controles de integridad de la base V5.
+
+`entities.py` resuelve correspondencias sobre datos proporcionados por el
+consumidor. Los proveedores no se llaman entre sí. El comando de universo lee
+los caches locales de tasas y clasificaciones y exporta un reporte sin reglas
+de elegibilidad. `reference/entity_catalog.json` conserva identidades internas
+dentro del almacén y los alias explícitos tienen alcance de dataset y fechas.
 
 ## Alcance de validación
 
