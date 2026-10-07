@@ -1,10 +1,10 @@
-"""Launch the risk_ratings command with checked dependencies."""
+"""Launch the valores_cuota command with checked dependencies."""
 from _bootstrap import prepare
 
 
 def main():
     prepare()
-    from fuentes_financieras.cli.risk_ratings import main as run
+    from fuentes_financieras.cli.valores_cuota import main as run
     return run()
 
 

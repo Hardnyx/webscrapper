@@ -5,7 +5,7 @@
 Download and validate the complete SBS historical ratings dataset.
 
 Usage:
-    python -m fuentes_financieras.cli.risk_ratings
+    python -m fuentes_financieras.cli.clasificaciones_riesgo
 
 Options:
     --data-root PATH
@@ -65,7 +65,7 @@ def run(argv=None):
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--keep-raw", action="store_true")
     parser.add_argument("--no-second-sync", action="store_true")
-    parser.add_argument("--output-dir", type=Path, default=Path.cwd() / "outputs" / "risk_ratings")
+    parser.add_argument("--output-dir", type=Path, default=Path.cwd() / "outputs" / "clasificaciones_riesgo")
     args = parser.parse_args(argv)
 
     from fuentes_financieras.runtime import resolve_data_root

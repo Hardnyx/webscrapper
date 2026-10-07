@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from openpyxl import load_workbook
 
-from fuentes_financieras.cli import passive_rates as cli_rates
+from fuentes_financieras.cli import tasas_pasivas as cli_rates
 from fuentes_financieras.models import SyncResult
 
 

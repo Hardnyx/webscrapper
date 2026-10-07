@@ -4,8 +4,8 @@ import runpy
 from _bootstrap import prepare
 
 APPS = {
-    'average-exchange-rate': 'average_exchange_rate.py',
-    'weighted-exchange-rate': 'weighted_exchange_rate.py',
+    'average-exchange-rate': 'tipo_cambio_promedio.py',
+    'weighted-exchange-rate': 'tipo_cambio_ponderado.py',
 }
 
 if __name__ == '__main__':

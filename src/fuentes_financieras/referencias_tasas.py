@@ -1,7 +1,7 @@
 """Product references from published SBS averages, without new downloads."""
 import pandas as pd
 from .exceptions import SchemaChangedError
-from .providers.sbs.passive_market import METHODOLOGY_URL
+from .providers.sbs.tasas_pasivas_mercado import METHODOLOGY_URL
 from .providers.sbs._universe_parser import normalized_entity_name
 
 PRODUCT_KEYS = ['entity_type', 'frequency', 'period', 'period_date', 'currency',

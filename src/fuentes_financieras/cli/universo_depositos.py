@@ -50,7 +50,7 @@ def write_report(path, sheets):
 def run(argv=None):
     parser = argparse.ArgumentParser(description='Universo SBS y correspondencias con datos locales.')
     parser.add_argument('--data-root', type=Path)
-    parser.add_argument('--output-dir', type=Path, default=Path('outputs/deposit_universe'))
+    parser.add_argument('--output-dir', type=Path, default=Path('outputs/universo_depositos'))
     parser.add_argument('--load-only', action='store_true')
     parser.add_argument('--force', action='store_true')
     parser.add_argument('--html', type=Path, help='Importar una captura local en lugar de consultar SBS.')

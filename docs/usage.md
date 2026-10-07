@@ -7,7 +7,7 @@ invocarse mediante una ruta absoluta desde otro directorio.
 ## Tasas pasivas
 
 ```powershell
-python scripts/sync_passive_rates.py --tipos B C F R --desde 2026-09-01 --hasta 2026-09-30 --excel outputs/tasas_pasivas.xlsx
+python scripts/sync_tasas_pasivas.py --tipos B C F R --desde 2026-09-01 --hasta 2026-09-30 --excel outputs/tasas_pasivas.xlsx
 ```
 
 B/F se consultan por día hábil; C/R por mes. `--load-only` lee únicamente el
@@ -25,7 +25,7 @@ solicitada por otro período con datos.
 ## Valores cuota SMV
 
 ```powershell
-python scripts/sync_fund_values.py --help
+python scripts/sync_valores_cuota.py --help
 ```
 
 El comando admite rangos de capturas, migración desde datos anteriores y
@@ -35,15 +35,15 @@ filtra los instrumentos después de la extracción.
 ## Clasificaciones históricas
 
 ```powershell
-python scripts/sync_risk_ratings.py --data-root data/sources --output-dir outputs/risk_ratings
+python scripts/sync_clasificaciones_riesgo.py --data-root data/sources --output-dir outputs/clasificaciones_riesgo
 ```
 
-[Contrato y validación](sbs-risk-ratings.md).
+[Contrato y validación](sbs-clasificaciones-riesgo.md).
 
 ## Tipo de cambio contable
 
 ```python
-from fuentes_financieras.providers.sbs.accounting_exchange_rate import get_accounting_exchange_rate
+from fuentes_financieras.providers.sbs.tipo_cambio_contable import get_accounting_exchange_rate
 
 rate = get_accounting_exchange_rate(
     "2026-09-30", storage_dir="data/sources/peru/sbs/tipo_cambio_contable"

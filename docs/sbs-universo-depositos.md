@@ -11,9 +11,9 @@ incompleta o un bloqueo produce un error y no reemplaza los datos válidos.
 ## Ejecutar
 
 ```powershell
-python scripts/sync_deposit_universe.py
-python scripts/sync_deposit_universe.py --load-only
-python scripts/sync_deposit_universe.py --html captura.html --observed-on 2026-10-07
+python scripts/sync_universo_depositos.py
+python scripts/sync_universo_depositos.py --load-only
+python scripts/sync_universo_depositos.py --html captura.html --observed-on 2026-10-07
 ```
 
 El lanzador comprueba dependencias. `--data-root PATH` selecciona el almacén;
@@ -85,7 +85,7 @@ de equivalencia. Las entidades B/F/C/R sin correspondencia permanecen visibles.
 
 ## Reporte
 
-`outputs/deposit_universe/universo_correspondencias.xlsx` incluye:
+`outputs/universo_depositos/universo_correspondencias.xlsx` incluye:
 
 - Universo más reciente e historial de capturas.
 - Identidades internas y fechas de primera/última observación.

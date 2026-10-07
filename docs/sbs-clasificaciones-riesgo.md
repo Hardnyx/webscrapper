@@ -7,11 +7,11 @@ Fuente: https://www.sbs.gob.pe/app/iece/paginas/MostrarResumenClasificaciones.as
 ## Ejecutar
 
 ```powershell
-python scripts/sync_risk_ratings.py
+python scripts/sync_clasificaciones_riesgo.py
 ```
 
 El lanzador verifica dependencias y utiliza el comando instalado
-`fuentes_financieras.cli.risk_ratings`. El proveedor usa `curl_cffi`, WebForms y HTML;
+`fuentes_financieras.cli.clasificaciones_riesgo`. El proveedor usa `curl_cffi`, WebForms y HTML;
 no utiliza navegador ni descarga PDF o XLS.
 
 1. Descubre todos los períodos publicados.
@@ -26,7 +26,7 @@ no utiliza navegador ni descarga PDF o XLS.
 Los datos usan el almacén resuelto por `fuentes_financieras`, predeterminado
 `data/sources`. Para cambiarlo: `--data-root PATH`.
 
-Los reportes se guardan en `outputs/risk_ratings` respecto del directorio de
+Los reportes se guardan en `outputs/clasificaciones_riesgo` respecto del directorio de
 trabajo. Para cambiarlo: `--output-dir PATH`.
 
 Se mantienen los nombres `resultado_historico_clasificaciones.json` y

@@ -5,8 +5,8 @@ from openpyxl import load_workbook
 from fuentes_financieras.catalog import CATALOG
 from fuentes_financieras.entities import EntityCatalog, correspondence_report, observation_changes
 from fuentes_financieras.exceptions import InvalidQueryError, SchemaChangedError
-from fuentes_financieras.providers.sbs.deposit_universe import DepositUniverseProvider
-from fuentes_financieras.cli import deposit_universe as cli
+from fuentes_financieras.providers.sbs.universo_depositos import DepositUniverseProvider
+from fuentes_financieras.cli import universo_depositos as cli
 
 
 def capture():

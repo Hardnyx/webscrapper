@@ -4,10 +4,10 @@ from types import SimpleNamespace
 import pandas as pd
 import pytest
 
-from fuentes_financieras.benchmarks import product_benchmarks
+from fuentes_financieras.referencias_tasas import product_benchmarks
 from fuentes_financieras.catalog import CATALOG
 from fuentes_financieras.exceptions import PeriodUnavailableError, SchemaChangedError
-from fuentes_financieras.providers.sbs.passive_market import PassiveMarketProvider, parse_market
+from fuentes_financieras.providers.sbs.tasas_pasivas_mercado import PassiveMarketProvider, parse_market
 
 
 def market_html(day='06/10/2026', flow_day=None):

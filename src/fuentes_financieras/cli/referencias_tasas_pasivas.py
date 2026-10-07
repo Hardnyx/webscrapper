@@ -4,9 +4,9 @@ import os
 from pathlib import Path
 
 from fuentes_financieras import source
-from fuentes_financieras.benchmarks import product_benchmarks
+from fuentes_financieras.referencias_tasas import product_benchmarks
 from fuentes_financieras.registry import get_provider
-from .deposit_universe import write_report
+from .universo_depositos import write_report
 
 
 def run(argv=None):
@@ -14,7 +14,7 @@ def run(argv=None):
     parser.add_argument('--desde')
     parser.add_argument('--hasta')
     parser.add_argument('--data-root', type=Path)
-    parser.add_argument('--output-dir', type=Path, default=Path('outputs/passive_benchmarks'))
+    parser.add_argument('--output-dir', type=Path, default=Path('outputs/referencias_tasas_pasivas'))
     parser.add_argument('--load-only', action='store_true')
     parser.add_argument('--force', action='store_true')
     args = parser.parse_args(argv)

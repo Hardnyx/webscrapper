@@ -20,8 +20,8 @@ No se interpreta automáticamente como una serie exclusiva de dólares.
 ## Ejecutar
 
 ```powershell
-python scripts/sync_passive_benchmarks.py --desde 2026-10-05 --hasta 2026-10-06
-python scripts/sync_passive_benchmarks.py --load-only
+python scripts/sync_referencias_tasas_pasivas.py --desde 2026-10-05 --hasta 2026-10-06
+python scripts/sync_referencias_tasas_pasivas.py --load-only
 ```
 
 El lanzador comprueba las dependencias. `--data-root PATH` selecciona el almacén
@@ -49,7 +49,7 @@ Contrato: `period`, `period_date`, `frequency`, `metric`, `currency`, `rate`,
 ## Promedios por producto
 
 ```python
-from fuentes_financieras.benchmarks import product_benchmarks
+from fuentes_financieras.referencias_tasas import product_benchmarks
 products = product_benchmarks(source('pe.sbs.tasas_pasivas').load())
 ```
 
@@ -62,7 +62,7 @@ frecuencia y fuentes. B/F corresponden a flujos de los últimos 30 días útiles
 C/R, a flujos del mes calendario. Una tasa vacía sigue vacía: no se convierte
 en cero ni se imputa. Promedios duplicados para la misma clave son un error.
 
-El reporte `outputs/passive_benchmarks/referencias_tasas_pasivas.xlsx` contiene
+El reporte `outputs/referencias_tasas_pasivas/referencias_tasas_pasivas.xlsx` contiene
 las referencias generales del rango solicitado y todos los promedios por
 producto presentes en el almacén local, con sus períodos explícitos. No recorta
 los promedios mensuales al rango diario ni los presenta como datos de ese día.

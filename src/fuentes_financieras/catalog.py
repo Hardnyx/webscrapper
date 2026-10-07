@@ -17,9 +17,18 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.sbs.estados_financieros": DatasetSpec(
+        dataset_id="pe.sbs.estados_financieros",
+        provider_class="fuentes_financieras.providers.sbs.estados_financieros:FinancialStatementsProvider",
+        title="SBS - Balance y resultados estadísticos por entidad",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/estados_financieros",
+        network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; miles de soles; resultados acumulados del ejercicio.",
+    ),
     "pe.sbs.tasas_pasivas_mercado": DatasetSpec(
         dataset_id="pe.sbs.tasas_pasivas_mercado",
-        provider_class="fuentes_financieras.providers.sbs.passive_market:PassiveMarketProvider",
+        provider_class="fuentes_financieras.providers.sbs.tasas_pasivas_mercado:PassiveMarketProvider",
         title="SBS - Tasas pasivas de mercado sobre saldos y flujos",
         country="PE", organization="SBS", frequency="daily",
         storage_path="peru/sbs/tasas_pasivas_mercado",
@@ -28,7 +37,7 @@ CATALOG: dict[str, DatasetSpec] = {
     ),
     "pe.sbs.universo_depositos": DatasetSpec(
         dataset_id="pe.sbs.universo_depositos",
-        provider_class="fuentes_financieras.providers.sbs.deposit_universe:DepositUniverseProvider",
+        provider_class="fuentes_financieras.providers.sbs.universo_depositos:DepositUniverseProvider",
         title="SBS - Universo de entidades autorizadas a captar depósitos",
         country="PE", organization="SBS", frequency="snapshot",
         storage_path="peru/sbs/universo_depositos",

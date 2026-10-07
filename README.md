@@ -25,11 +25,12 @@ intérprete; no requieren instalar previamente el proyecto.
 Desde la raíz del repositorio:
 
 ```powershell
-python scripts/sync_passive_rates.py --tipos B C F R --desde 2026-09-01 --hasta 2026-09-30 --excel outputs/tasas_pasivas.xlsx
-python scripts/sync_fund_values.py --desde 2026-09-01 --hasta 2026-09-30
-python scripts/sync_risk_ratings.py
-python scripts/sync_deposit_universe.py
-python scripts/sync_passive_benchmarks.py --desde 2026-10-05 --hasta 2026-10-06
+python scripts/sync_tasas_pasivas.py --tipos B C F R --desde 2026-09-01 --hasta 2026-09-30 --excel outputs/tasas_pasivas.xlsx
+python scripts/sync_valores_cuota.py --desde 2026-09-01 --hasta 2026-09-30
+python scripts/sync_estados_financieros.py --desde 2026-08
+python scripts/sync_clasificaciones_riesgo.py
+python scripts/sync_universo_depositos.py
+python scripts/sync_referencias_tasas_pasivas.py --desde 2026-10-05 --hasta 2026-10-06
 ```
 
 Las fechas son parámetros de ejemplo. Use `--help` para consultar las opciones
@@ -54,17 +55,17 @@ fuentes-sync-universe --help
 | SBS universo de depósitos | `source("pe.sbs.universo_depositos")` | Implementado; capturas fechadas y correspondencias locales |
 | SMV valores cuota | `source("pe.smv.fondos_mutuos.valores_cuota")` | Implementado; capturas e histórico EVCP, todos los fondos y series |
 | SBS clasificaciones históricas | `source("pe.sbs.clasificaciones_riesgo")` | Implementado; HTML semestral, sin PDF/XLS |
-| SBS tipo de cambio contable USD/PEN | `providers.sbs.accounting_exchange_rate` | Implementado; funciones propias |
+| SBS tipo de cambio contable USD/PEN | `providers.sbs.tipo_cambio_contable` | Implementado; funciones propias |
 | SBS curva soberana | `source("pe.sbs.curva_soberana")` | Pendiente de migración; consultas bloqueadas con error explícito |
 
 La implementación disponible y la presencia en el catálogo no certifican una
 descarga reciente. Las pruebas locales no consultan SBS ni SMV.
 
-El [universo de depósitos](docs/sbs-deposit-universe.md) incluye un catálogo de
+El [universo de depósitos](docs/sbs-universo-depositos.md) incluye un catálogo de
 identidades internas y un reporte Excel de correspondencias con tasas y
 clasificaciones. No determina elegibilidad regulatoria.
 
-Las [referencias de tasas pasivas](docs/sbs-passive-benchmarks.md) conservan
+Las [referencias de tasas pasivas](docs/sbs-passive-referencias_tasas.md) conservan
 separadas las bases sobre saldos y flujos y las ventanas diarias y mensuales.
 
 ## Uso desde Automatizaciones
@@ -109,8 +110,10 @@ python -m compileall -q src scripts apps tools
 
 - [Arquitectura y almacenamiento](docs/architecture.md)
 - [Comandos y aplicaciones](docs/usage.md)
-- [Clasificaciones históricas SBS](docs/sbs-risk-ratings.md)
+- [Clasificaciones históricas SBS](docs/sbs-clasificaciones-riesgo.md)
 - [Migración desde las rutas anteriores](docs/migration.md)
 
 El histórico completo se ejecuta primero localmente. Este repositorio no
 programa descargas ni publica datos mediante GitHub Actions.
+
+Los [estados financieros mensuales](docs/sbs-estados-financieros.md) incorporan balance y resultados B/F/C/R, con unidades y cobertura explícitas. Los archivos financieros usan nombres en español; consulta los comandos anteriores actualizados.

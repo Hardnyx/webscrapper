@@ -32,9 +32,9 @@ se utiliza fuera de Automatizaciones.
 | Directorio local | Contenido |
 | --- | --- |
 | `data/sources/` | Particiones canónicas, respuestas y manifiestos de fuentes |
-| `outputs/risk_ratings/` | Resumen y reporte de validación del histórico de clasificaciones |
-| `outputs/deposit_universe/` | Universo, identidades y correspondencias con datasets locales |
-| `outputs/passive_benchmarks/` | Referencias generales y promedios publicados por producto |
+| `outputs/clasificaciones_riesgo/` | Resumen y reporte de validación del histórico de clasificaciones |
+| `outputs/universo_depositos/` | Universo, identidades y correspondencias con datasets locales |
+| `outputs/referencias_tasas_pasivas/` | Referencias generales y promedios publicados por producto |
 | `outputs/site_capture/` | Capturas y recursos de sitios |
 | `outputs/` | Exportaciones y otros resultados |
 | `dist/` | Ejecutables generados |
@@ -50,7 +50,7 @@ los caches locales de tasas y clasificaciones y exporta un reporte sin reglas
 de elegibilidad. `reference/entity_catalog.json` conserva identidades internas
 dentro del almacén y los alias explícitos tienen alcance de dataset y fechas.
 
-`benchmarks.py` extrae promedios publicados de un DataFrame de tasas entregado
+`referencias_tasas.py` extrae promedios publicados de un DataFrame de tasas entregado
 por el consumidor. `pe.sbs.tasas_pasivas_mercado` consulta su propia página;
 el comando combina sus referencias generales con los promedios locales.
 Conserva bases sobre saldos/flujos, grupos y ventanas, sin calcular spreads.
@@ -61,3 +61,5 @@ Las pruebas son locales y no generan descargas históricas. La compilación de
 Python comprueba sintaxis, pero no certifica las interfaces gráficas ni la
 compilación de ejecutables en Windows. La curva soberana conserva un error
 explícito hasta completar su migración.
+
+`pe.sbs.estados_financieros` publica cuentas mensuales en formato largo y conserva sus originales Excel y notas. No consulta otros proveedores ni calcula ratios. El reporte se escribe en `outputs/estados_financieros/`.

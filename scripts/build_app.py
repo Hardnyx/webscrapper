@@ -9,9 +9,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {
-    'passive-rates': ('scripts/sync_passive_rates.py', 'TasasPasivasSBS', True),
-    'average-exchange-rate': ('apps/sbs/average_exchange_rate.py', 'TipoCambioSBS', False),
-    'weighted-exchange-rate': ('apps/sbs/weighted_exchange_rate.py', 'TipoCambioPonderadoSBS', False),
+    'passive-rates': ('scripts/sync_tasas_pasivas.py', 'TasasPasivasSBS', True),
+    'average-exchange-rate': ('apps/sbs/tipo_cambio_promedio.py', 'TipoCambioSBS', False),
+    'weighted-exchange-rate': ('apps/sbs/tipo_cambio_ponderado.py', 'TipoCambioPonderadoSBS', False),
 }
 
 

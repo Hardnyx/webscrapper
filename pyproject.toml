@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fuentes-financieras"
-version = "0.5.0"
+version = "0.6.0"
 description = "Reusable financial data scrapers with shared storage"
 requires-python = ">=3.11"
 dependencies = [
@@ -21,11 +21,12 @@ desktop = ["selenium>=4.20,<5"]
 dev = ["pytest>=8,<10"]
 
 [project.scripts]
-fuentes-sync-rates = "fuentes_financieras.cli.passive_rates:main"
-fuentes-sync-ratings = "fuentes_financieras.cli.risk_ratings:main"
-fuentes-sync-smv = "fuentes_financieras.cli.fund_values:main"
-fuentes-sync-universe = "fuentes_financieras.cli.deposit_universe:main"
-fuentes-sync-benchmarks = "fuentes_financieras.cli.passive_benchmarks:main"
+fuentes-sync-statements = "fuentes_financieras.cli.estados_financieros:main"
+fuentes-sync-rates = "fuentes_financieras.cli.tasas_pasivas:main"
+fuentes-sync-ratings = "fuentes_financieras.cli.clasificaciones_riesgo:main"
+fuentes-sync-smv = "fuentes_financieras.cli.valores_cuota:main"
+fuentes-sync-universe = "fuentes_financieras.cli.universo_depositos:main"
+fuentes-sync-benchmarks = "fuentes_financieras.cli.referencias_tasas_pasivas:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

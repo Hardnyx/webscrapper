@@ -6,15 +6,15 @@ from types import SimpleNamespace
 import pandas as pd
 
 from fuentes_financieras import sbs_tipo_cambio
-from fuentes_financieras.cli import risk_ratings
-from fuentes_financieras.providers.sbs import accounting_exchange_rate
+from fuentes_financieras.cli import clasificaciones_riesgo
+from fuentes_financieras.providers.sbs import tipo_cambio_contable
 from fuentes_financieras.models import SyncResult
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_accounting_compatibility_and_parser():
-    assert sbs_tipo_cambio.get_accounting_exchange_rate is accounting_exchange_rate.get_accounting_exchange_rate
+    assert sbs_tipo_cambio.get_accounting_exchange_rate is tipo_cambio_contable.get_accounting_exchange_rate
     html = b'<table><tr><td>30/09/2026</td><td>3.7500</td></tr></table>'
     result = sbs_tipo_cambio.parse_accounting_exchange_rate_response(html)
     assert result['usd_pen_accounting'].tolist() == [3.75]
@@ -46,7 +46,7 @@ def test_ratings_reports_use_selected_output_directory(tmp_path, monkeypatch):
     monkeypatch.setattr(fuentes_financieras, 'source', lambda _: CachedRatings())
     monkeypatch.chdir(tmp_path)
     output = tmp_path / 'reports'
-    assert risk_ratings.main(['--data-root', str(tmp_path / 'data'), '--output-dir', str(output)]) == 0
+    assert clasificaciones_riesgo.main(['--data-root', str(tmp_path / 'data'), '--output-dir', str(output)]) == 0
     assert (output / 'resultado_historico_clasificaciones.json').is_file()
     assert (output / 'resumen_historico_clasificaciones.csv').is_file()
     assert not (tmp_path / 'resultado_historico_clasificaciones.json').exists()

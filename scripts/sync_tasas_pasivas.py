@@ -1,10 +1,10 @@
-"""Launch the passive_rates command with checked dependencies."""
+"""Launch the tasas_pasivas command with checked dependencies."""
 from _bootstrap import prepare
 
 
 def main():
     prepare()
-    from fuentes_financieras.cli.passive_rates import main as run
+    from fuentes_financieras.cli.tasas_pasivas import main as run
     return run()
 
 
