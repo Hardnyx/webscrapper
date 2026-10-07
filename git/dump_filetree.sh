@@ -1,1 +1,0 @@
-find . -not -path './.git/*' > filetree.txt

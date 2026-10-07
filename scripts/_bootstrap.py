@@ -1,26 +1,32 @@
-"""Run the current shared SBS scraper from the historical entry point."""
+"""Prepare the repository launchers without reinstalling compatible dependencies."""
 from __future__ import annotations
 
 import os
 import subprocess
 import sys
+import tomllib
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
+ROOT = Path(sys.executable).resolve().parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parents[1]
 
-def ensure_dependencies(root: Path):
-    import tomllib
+
+def prepare(*extras: str) -> Path:
+    if getattr(sys, 'frozen', False):
+        os.environ.setdefault('FINANCIAL_SOURCES_DATA_ROOT', str(ROOT / 'data' / 'sources'))
+        return ROOT
     try:
-        installed = version('packaging')
-        major = int(installed.split('.')[0])
-        if not 24 <= major < 27:
+        if not 24 <= int(version('packaging').split('.')[0]) < 27:
             raise PackageNotFoundError('packaging')
     except PackageNotFoundError:
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'packaging>=24,<27'])
     from packaging.requirements import Requirement
-    requirements = tomllib.loads((root / 'pyproject.toml').read_text(encoding='utf-8'))['project']['dependencies']
+    project = tomllib.loads((ROOT / 'pyproject.toml').read_text(encoding='utf-8'))['project']
+    requirements = list(project['dependencies'])
+    for extra in extras:
+        requirements.extend(project['optional-dependencies'][extra])
     missing = []
-    for text in requirements:
+    for text in dict.fromkeys(requirements):
         requirement = Requirement(text)
         if requirement.marker and not requirement.marker.evaluate():
             continue
@@ -34,18 +40,5 @@ def ensure_dependencies(root: Path):
             missing.append(text)
     if missing:
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', *missing])
-
-
-def main() -> int:
-    frozen = getattr(sys, 'frozen', False)
-    root = Path(sys.executable).resolve().parent if frozen else Path(__file__).resolve().parents[2]
-    if not frozen:
-        ensure_dependencies(root)
-        sys.path.insert(0, str(root / 'src'))
-    os.environ.setdefault('FINANCIAL_SOURCES_DATA_ROOT', str(root / 'data' / 'sources'))
-    from fuentes_financieras.cli_rates import main as run
-    return run()
-
-
-if __name__ == '__main__':
-    raise SystemExit(main())
+    sys.path.insert(0, str(ROOT / 'src'))
+    return ROOT

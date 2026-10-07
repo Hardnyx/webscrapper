@@ -1,11 +1,25 @@
+# Python and local environments
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
 .venv/
+venv/
+
+# Builds and generated artifacts
 build/
 dist/
+*.spec
+outputs/
+
+# Local source data and previous standalone outputs
 data/
 datos_historico/
+site_dump/
 resultado_historico_clasificaciones.json
 resumen_historico_clasificaciones.csv
+
+# Local settings
+.env
+.env.*
+!.env.example

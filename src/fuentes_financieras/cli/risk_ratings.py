@@ -5,7 +5,7 @@
 Download and validate the complete SBS historical ratings dataset.
 
 Usage:
-    python descargar_historico_clasificaciones.py
+    python -m fuentes_financieras.cli.risk_ratings
 
 Options:
     --data-root PATH
@@ -21,7 +21,7 @@ Options:
         Skip the second cache-validation sync.
 
 Normal execution:
-1. installs only missing/incompatible dependencies;
+1. uses dependencies declared by the installed package;
 2. discovers every period currently published by SBS;
 3. downloads every missing historical period;
 4. repeats sync and validates downloaded=0;
@@ -32,101 +32,12 @@ Normal execution:
 from __future__ import annotations
 
 import argparse
-import importlib
 import json
 import os
-import re
-import subprocess
 import sys
 import traceback
 from datetime import datetime
-from importlib.metadata import PackageNotFoundError, version as dist_version
 from pathlib import Path
-
-
-ROOT = Path(__file__).resolve().parent
-SRC = ROOT / "src"
-
-REQUIREMENTS = [
-    ("pandas", "pandas", (2, 1)),
-    ("numpy", "numpy", (1, 26)),
-    ("pyarrow", "pyarrow", (15, 0)),
-    ("beautifulsoup4", "bs4", (4, 12)),
-    ("lxml", "lxml", (5, 0)),
-    ("requests", "requests", (2, 31)),
-    ("truststore", "truststore", (0, 10)),
-    ("curl_cffi", "curl_cffi", (0, 16, 0)),
-    ("certifi", "certifi", (2024, 2, 2)),
-]
-
-
-MAXIMUM_VERSIONS = {
-    "pandas": (4,), "numpy": (3,), "pyarrow": (24,),
-    "beautifulsoup4": (5,), "lxml": (7,), "requests": (3,),
-    "truststore": (1,), "curl_cffi": (1,),
-}
-
-
-def numeric_version(value: str) -> tuple[int, ...]:
-    out = []
-    for token in re.split(r"[.+-]", value):
-        m = re.match(r"(\d+)", token)
-        if not m:
-            break
-        out.append(int(m.group(1)))
-    return tuple(out)
-
-
-def ensure_dependencies():
-    print("=" * 112)
-    print("0. DEPENDENCIAS")
-    print("=" * 112)
-
-    changed = False
-
-    for package, import_name, minimum in REQUIREMENTS:
-        try:
-            installed = dist_version(package)
-            maximum = MAXIMUM_VERSIONS.get(package)
-            compatible = numeric_version(installed) >= minimum
-            if maximum is not None:
-                compatible = compatible and numeric_version(installed) < maximum
-            if compatible:
-                print(f"[deps] {package:<18} {installed:<14} -> versión OK.")
-                continue
-            print(f"[deps] {package:<18} {installed:<14} -> versión incompatible.")
-        except PackageNotFoundError:
-            print(f"[deps] {package:<18} no instalado.")
-
-        requirement = f"{package}>={'.'.join(map(str, minimum))}"
-        maximum = MAXIMUM_VERSIONS.get(package)
-        if maximum is not None:
-            requirement += f",<{'.'.join(map(str, maximum))}"
-        print(f"[deps] Instalando únicamente {requirement} con {sys.executable}")
-        subprocess.check_call([
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--disable-pip-version-check",
-            requirement,
-        ])
-        changed = True
-
-    if changed and os.environ.get("FUENTES_CLASIF_DEPS_RESTARTED") != "1":
-        print("\n[deps] Hubo cambios. Reiniciando Python automáticamente...")
-        env = os.environ.copy()
-        env["FUENTES_CLASIF_DEPS_RESTARTED"] = "1"
-        completed = subprocess.run(
-            [sys.executable, str(Path(__file__).resolve()), *sys.argv[1:]],
-            env=env,
-        )
-        raise SystemExit(completed.returncode)
-
-    importlib.invalidate_caches()
-    for package, import_name, minimum in REQUIREMENTS:
-        importlib.import_module(import_name)
-        print(f"[deps] {package:<18} {dist_version(package):<14} -> import OK.")
 
 
 def section(title: str):
@@ -148,28 +59,23 @@ def compact_sync(result):
     }
 
 
-def run():
+def run(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-root", default=None)
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--keep-raw", action="store_true")
     parser.add_argument("--no-second-sync", action="store_true")
-    args = parser.parse_args()
+    parser.add_argument("--output-dir", type=Path, default=Path.cwd() / "outputs" / "risk_ratings")
+    args = parser.parse_args(argv)
 
-    ensure_dependencies()
-
-    if not SRC.is_dir():
-        raise RuntimeError(f"No existe {SRC}")
-
-    data_root = (
-        Path(args.data_root).expanduser().resolve()
-        if args.data_root
-        else (ROOT / "datos_historico").resolve()
-    )
+    from fuentes_financieras.runtime import resolve_data_root
+    data_root = resolve_data_root(args.data_root)
     data_root.mkdir(parents=True, exist_ok=True)
-
     os.environ["FINANCIAL_SOURCES_DATA_ROOT"] = str(data_root)
-    sys.path.insert(0, str(SRC))
+    output_dir = args.output_dir.expanduser().resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    from fuentes_financieras.registry import get_provider
+    get_provider.cache_clear()
 
     from fuentes_financieras import source
 
@@ -344,7 +250,7 @@ def run():
         .sort_values("period_code")
     )
 
-    summary_path = ROOT / "resumen_historico_clasificaciones.csv"
+    summary_path = output_dir / "resumen_historico_clasificaciones.csv"
     summary.to_csv(summary_path, index=False, encoding="utf-8-sig")
 
     report["tests"]["load_history"] = {
@@ -376,7 +282,7 @@ def run():
     )
     report["finished_at"] = datetime.now().isoformat(timespec="seconds")
 
-    report_path = ROOT / "resultado_historico_clasificaciones.json"
+    report_path = output_dir / "resultado_historico_clasificaciones.json"
     report_path.write_text(
         json.dumps(report, indent=2, ensure_ascii=False, default=str),
         encoding="utf-8",
@@ -401,12 +307,16 @@ def run():
     return 1
 
 
-if __name__ == "__main__":
+def main(argv=None) -> int:
     try:
-        raise SystemExit(run())
+        return run(argv)
     except KeyboardInterrupt:
-        raise SystemExit(130)
+        return 130
     except Exception:
         section("EJECUCIÓN FALLIDA")
         traceback.print_exc()
-        raise SystemExit(1)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

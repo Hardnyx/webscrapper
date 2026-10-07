@@ -100,6 +100,9 @@ def load_config_file(config_path: str | Path) -> CaptureConfig:
     if not payload.get("url"):
         raise ValueError("La configuración debe incluir 'url'.")
 
+    out_dir = Path(payload.get("out_dir", "site_dump")).expanduser()
+    if not out_dir.is_absolute():
+        payload["out_dir"] = str((path.parent / out_dir).resolve())
     return CaptureConfig(**payload)
 
 
@@ -961,7 +964,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--config",
-        default="config.json",
+        default=str(Path(__file__).with_name("site_dump_config.json")),
         help="Ruta al archivo de configuración JSON."
     )
     return parser.parse_args()

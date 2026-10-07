@@ -1,6 +1,6 @@
 {
   "url": "https://example.com",
-  "out_dir": "site_dump",
+  "out_dir": "../../outputs/site_capture",
   "bundle_zip_name": "site_dump_bundle.zip",
   "runner_python_name": "launch_site.py",
   "runner_bat_name": "run_site.bat",

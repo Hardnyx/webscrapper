@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fuentes-financieras"
-version = "0.2.5"
+version = "0.3.0"
 description = "Shared FUENTES financial data scrapers"
 requires-python = ">=3.11"
 dependencies = [
@@ -16,11 +16,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+browser = ["selenium>=4.20,<5"]
+desktop = ["selenium>=4.20,<5"]
 dev = ["pytest>=8,<10"]
 
 [project.scripts]
-fuentes-sync-rates = "fuentes_financieras.cli_rates:main"
-fuentes-sync-smv = "fuentes_financieras.cli_smv:main"
+fuentes-sync-rates = "fuentes_financieras.cli.passive_rates:main"
+fuentes-sync-ratings = "fuentes_financieras.cli.risk_ratings:main"
+fuentes-sync-smv = "fuentes_financieras.cli.fund_values:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

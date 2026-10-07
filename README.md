@@ -1,116 +1,104 @@
 # webscrapper
 
-Scrapers de fuentes financieras para FUENTES. El paquete compartido `fuentes_financieras`
-se instala desde este repositorio; el ejecutor antiguo de tasas pasivas en `SBS/` se reemplaza por el proveedor nuevo.
-Los scripts de tipo de cambio existentes siguen disponibles.
+Fuentes financieras para FUENTES, con extracción, caché y almacenamiento compartidos
+mediante el paquete Python `fuentes_financieras`.
 
-## Instalación
+## Organización
 
-Python 3.11 o posterior:
+| Carpeta | Contenido |
+| --- | --- |
+| [`src/fuentes_financieras/`](src/fuentes_financieras/) | API, proveedores SBS/SMV, almacenamiento y comandos instalables |
+| [`scripts/`](scripts/) | Ejecutores con instalación automática de dependencias y empaquetador único |
+| [`apps/sbs/`](apps/sbs/) | Aplicaciones de escritorio de tipo de cambio promedio y ponderado |
+| [`tools/`](tools/) | Captura de sitios y utilidades de git |
+| [`tests/`](tests/) | Pruebas locales de contratos, caché, comandos y estructura |
+| [`docs/`](docs/) | Arquitectura, uso y migración de rutas |
+
+`data/`, `outputs/` y `dist/` se generan localmente y están excluidos de git.
+
+## Empezar
+
+Se requiere Python 3.11 o posterior. Los ejecutores de `scripts/` comprueban las
+versiones e instalan solo dependencias faltantes o incompatibles con el mismo
+intérprete; no requieren instalar previamente el proyecto.
+
+Desde la raíz del repositorio:
+
+```powershell
+python scripts/sync_passive_rates.py --tipos B C F R --desde 2026-09-01 --hasta 2026-09-30 --excel outputs/tasas_pasivas.xlsx
+python scripts/sync_fund_values.py --desde 2026-09-01 --hasta 2026-09-30
+python scripts/sync_risk_ratings.py
+```
+
+Las fechas son parámetros de ejemplo. Use `--help` para consultar las opciones
+antes de iniciar una descarga histórica.
+
+Para consumir el paquete desde notebooks o instalar los comandos:
 
 ```powershell
 python -m pip install -e .
+fuentes-sync-rates --help
+fuentes-sync-smv --help
+fuentes-sync-ratings --help
 ```
 
-Para pruebas locales:
-
-```powershell
-python -m pip install -e ".[dev]"
-python -m pytest
-```
-
-## Fuentes integradas
+## Fuentes
 
 | Fuente | Acceso | Estado |
 | --- | --- | --- |
 | SBS tasas pasivas B/C/F/R | `source("pe.sbs.tasas_pasivas")` | Implementado; B/F diario, C/R mensual |
-| SMV valores cuota, todos los fondos y series | `source("pe.smv.fondos_mutuos.valores_cuota")` | Implementado; capturas e histórico EVCP |
-| SBS tipo de cambio contable USD/PEN | `fuentes_financieras.sbs_tipo_cambio` | Implementado; funciones propias |
+| SMV valores cuota | `source("pe.smv.fondos_mutuos.valores_cuota")` | Implementado; capturas e histórico EVCP, todos los fondos y series |
 | SBS clasificaciones históricas | `source("pe.sbs.clasificaciones_riesgo")` | Implementado; HTML semestral, sin PDF/XLS |
-| SBS curva soberana | `source("pe.sbs.curva_soberana")` | Adaptador pendiente; las consultas lanzan un error explícito |
+| SBS tipo de cambio contable USD/PEN | `providers.sbs.accounting_exchange_rate` | Implementado; funciones propias |
+| SBS curva soberana | `source("pe.sbs.curva_soberana")` | Pendiente de migración; consultas bloqueadas con error explícito |
 
-La presencia en el catálogo no certifica una descarga reciente. Las pruebas
-locales verifican integración y contratos; el acceso real depende de SBS/SMV.
+La implementación disponible y la presencia en el catálogo no certifican una
+descarga reciente. Las pruebas locales no consultan SBS ni SMV.
 
 ## Uso desde Automatizaciones
-
-Instalar este repositorio en el mismo entorno Python de los notebooks permite:
 
 ```python
 from fuentes_financieras import source
 
 rates = source("pe.sbs.tasas_pasivas")
 funds = source("pe.smv.fondos_mutuos.valores_cuota")
+ratings = source("pe.sbs.clasificaciones_riesgo")
 ```
 
-La interfaz común es `fetch/sync/load`. Los notebooks consumen datos y
-seleccionan instrumentos; la extracción permanece aquí.
+La interfaz compartida es `fetch/sync/load`. Los notebooks seleccionan y analizan
+los datos; los proveedores extraen y almacenan.
 
-`FINANCIAL_SOURCES_DATA_ROOT` permite reutilizar el almacén existente. También se
-conserva la detección de `estructura.json` y de los almacenes de Automatizaciones.
-Fuera de ese proyecto, los datos se guardan en `data/sources` de este repositorio.
-Los datos y las respuestas descargadas están excluidos de git.
+`FINANCIAL_SOURCES_DATA_ROOT` fija el almacén. Se conserva la detección de
+`estructura.json` y de los almacenes de Automatizaciones. En una instalación
+local del repositorio, el valor predeterminado es `data/sources`.
 
-## SMV
-
-Consultar las opciones antes de definir el período de descarga:
+## Escritorio y empaquetado
 
 ```powershell
-python -m fuentes_financieras.cli_smv --help
-python -m fuentes_financieras.cli_smv --desde 2026-09-01 --hasta 2026-09-30
+python scripts/run_desktop.py --app average-exchange-rate
+python scripts/run_desktop.py --app weighted-exchange-rate
+python scripts/build_app.py --app passive-rates
 ```
 
-El histórico completo se ejecuta primero localmente. Este repositorio todavía
-no configura descargas programadas ni publica datos mediante GitHub Actions.
+El empaquetador acepta las tres aplicaciones y genera sus ejecutables en
+`dist/`, usando un entorno temporal aislado. Su ejecución no se ha validado en
+Windows. Las aplicaciones de escritorio mantienen sus extractores anteriores;
+son fuentes distintas del tipo de cambio contable.
 
-## Tipo de cambio contable
-
-```python
-from fuentes_financieras.sbs_tipo_cambio import get_accounting_exchange_rate
-
-rate = get_accounting_exchange_rate(
-    "2026-09-30", storage_dir="data/sources/peru/sbs/tipo_cambio_contable"
-)
-print(rate["date"], rate["usd_pen_accounting"])
-```
-
-La fecha efectiva devuelta puede ser anterior a la fecha solicitada.
-
-## Clasificaciones históricas
+## Pruebas
 
 ```powershell
-python descargar_historico_clasificaciones.py --data-root data/sources
+python -m pip install -e ".[dev,browser]"
+python -m pytest
+python -m compileall -q src scripts apps tools
 ```
 
-Este ejecutor comprueba e instala dependencias faltantes, descarga los períodos
-faltantes y verifica una segunda sincronización sin redescargas. Su configuración
-predeterminada conserva `datos_historico` para compatibilidad.
-[Opciones y contrato de datos](docs/CLASIFICACIONES.md).
+## Documentación
 
-## Procedencia de esta integración
+- [Arquitectura y almacenamiento](docs/architecture.md)
+- [Comandos y aplicaciones](docs/usage.md)
+- [Clasificaciones históricas SBS](docs/sbs-risk-ratings.md)
+- [Migración desde las rutas anteriores](docs/migration.md)
 
-Base: `fuentes_financieras_codigo_CORREGIDO_V5.zip` (5 de octubre de 2026).
-Se añade el extractor de `fuentes_financieras_clasificaciones_historico_v2.zip`
-(6 de octubre de 2026), integrando sus cambios de esquema sin reemplazar las
-validaciones de caché, rutas relativas ni lectura por particiones de la base V5.
-
-## Tasas pasivas SBS: reemplazo del ejecutor antiguo
-
-El archivo `SBS/Tasa pasiva/script.py` ahora utiliza `fuentes_financieras`, con
-`curl_cffi`, estado WebForms y caché Parquet. Se reemplaza la interfaz Tkinter
-anterior por ejecución parametrizada en consola, sin Selenium.
-
-Desde la raíz del repositorio:
-
-```powershell
-python "SBS/Tasa pasiva/script.py" --tipos B C F R --desde 2026-09-01 --hasta 2026-09-30 --excel tasas_pasivas.xlsx
-```
-
-El ejecutor instala únicamente dependencias faltantes o incompatibles usando
-el mismo intérprete. También puede usarse `python -m fuentes_financieras.cli_rates`
-una vez instalado el paquete. `--load-only` consulta exclusivamente datos locales;
-`--force` solicita una revalidación explícita. Una sincronización incompleta
-finaliza con código 1 y no exporta un Excel que parezca completo.
-
-`empaquetar.py` construye un ejecutable de consola con el proveedor nuevo en
-un entorno aislado. La compilación del ejecutable no se ha validado en Windows.
+El histórico completo se ejecuta primero localmente. Este repositorio no
+programa descargas ni publica datos mediante GitHub Actions.
