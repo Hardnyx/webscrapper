@@ -25,6 +25,7 @@ python -m pytest
 | SBS tasas pasivas B/C/F/R | `source("pe.sbs.tasas_pasivas")` | Implementado; B/F diario, C/R mensual |
 | SMV valores cuota, todos los fondos y series | `source("pe.smv.fondos_mutuos.valores_cuota")` | Implementado; capturas e histórico EVCP |
 | SBS tipo de cambio contable USD/PEN | `fuentes_financieras.sbs_tipo_cambio` | Implementado; funciones propias |
+| SBS clasificaciones históricas | `source("pe.sbs.clasificaciones_riesgo")` | Implementado; HTML semestral, sin PDF/XLS |
 | SBS curva soberana | `source("pe.sbs.curva_soberana")` | Adaptador pendiente; las consultas lanzan un error explícito |
 
 La presencia en el catálogo no certifica una descarga reciente. Las pruebas
@@ -73,3 +74,21 @@ print(rate["date"], rate["usd_pen_accounting"])
 ```
 
 La fecha efectiva devuelta puede ser anterior a la fecha solicitada.
+
+## Clasificaciones históricas
+
+```powershell
+python descargar_historico_clasificaciones.py --data-root data/sources
+```
+
+Este ejecutor comprueba e instala dependencias faltantes, descarga los períodos
+faltantes y verifica una segunda sincronización sin redescargas. Su configuración
+predeterminada conserva `datos_historico` para compatibilidad.
+[Opciones y contrato de datos](docs/CLASIFICACIONES.md).
+
+## Procedencia de esta integración
+
+Base: `fuentes_financieras_codigo_CORREGIDO_V5.zip` (5 de octubre de 2026).
+Se añade el extractor de `fuentes_financieras_clasificaciones_historico_v2.zip`
+(6 de octubre de 2026), integrando sus cambios de esquema sin reemplazar las
+validaciones de caché, rutas relativas ni lectura por particiones de la base V5.

@@ -83,6 +83,7 @@ class Manifest:
             "manifest_version": MANIFEST_VERSION,
             "dataset_id": self.dataset_id,
             "last_schema_hash": None,
+            "last_schema_contract_version": None,
             "entries": {},
         }
 
@@ -106,6 +107,7 @@ class Manifest:
 
         data.setdefault("entries", {})
         data.setdefault("last_schema_hash", None)
+        data.setdefault("last_schema_contract_version", None)
         return data
 
     def get(self, period_key: str) -> dict[str, Any] | None:
@@ -121,6 +123,17 @@ class Manifest:
     @last_schema_hash.setter
     def last_schema_hash(self, value: str | None):
         self.data["last_schema_hash"] = value
+
+    @property
+    def last_schema_contract_version(self) -> str | None:
+        value = self.data.get("last_schema_contract_version")
+        return str(value) if value is not None else None
+
+    @last_schema_contract_version.setter
+    def last_schema_contract_version(self, value: str | None):
+        self.data["last_schema_contract_version"] = (
+            str(value) if value is not None else None
+        )
 
     def save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -239,10 +252,9 @@ class DatasetStorage:
                 existing["_period_key"].astype(str) != str(period_key)
             ]
 
-            out = pd.concat(
-                [existing, incoming],
-                ignore_index=True,
-                sort=False,
+            # Empty legacy frames must not alter the incoming canonical dtypes.
+            out = incoming if existing.empty else pd.concat(
+                [existing, incoming], ignore_index=True, sort=False,
             )
         else:
             out = incoming

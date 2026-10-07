@@ -151,6 +151,17 @@ class DatasetProvider(ABC):
             now = utc_now_iso()
 
             last_schema = self.storage.manifest.last_schema_hash
+            last_contract = self.storage.manifest.last_schema_contract_version
+            if last_contract is None:
+                # Legacy manifests retain their guard when the contract is unchanged.
+                contracts = {
+                    str(entry.get("contract_version", "1"))
+                    for entry in self.storage.manifest.data["entries"].values()
+                    if entry.get("status") == "validated"
+                }
+                last_contract = next(iter(contracts)) if len(contracts) == 1 else "1"
+            if last_contract != str(self.contract_version):
+                last_schema = None
 
             if (
                 last_schema
@@ -221,6 +232,7 @@ class DatasetProvider(ABC):
                 entry,
             )
             self.storage.manifest.last_schema_hash = sh
+            self.storage.manifest.last_schema_contract_version = self.contract_version
             self.storage.manifest.save()
 
             result.details.append({
