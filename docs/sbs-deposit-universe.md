@@ -48,6 +48,14 @@ del nombre ni se realizan asignaciones por similitud.
 
 Los alias revisados se pasan con `--aliases equivalencias.json`:
 
+El reporte aplica además 25 equivalencias de etiquetas revisadas en SBS,
+definidas en `entity_aliases.py`: B/F del 6 al 7 de octubre de 2026 y R de agosto
+de 2026. Los límites cubren únicamente la muestra verificada y deben ampliarse
+con revisión para otros períodos. La hoja **Equivalencias revisadas** muestra
+los nombres, identificadores, fechas y fuentes. No se impone una asignación
+si la entidad destino no existe en el catálogo local; los conflictos entre
+equivalencias integradas y externas siguen produciendo `ambiguous`.
+
 ```json
 [
   {
@@ -69,6 +77,11 @@ posibles producen `ambiguous`; ninguna produce `unmatched`. El cruce con datos
 históricos reconoce identidad, sin inferir autorización en la fecha del dato.
 Los identificadores no deben usarse como llave universal entre catálogos
 independientes sin compartir el catálogo y sus equivalencias.
+
+Las filas `Promedio` de tasas se conservan con estado `aggregate` y sin
+identificador de entidad. Los tipos de clasificaciones fuera de B/F/C/R se
+conservan con estado `outside_scope`. Ninguno cuenta como una entidad pendiente
+de equivalencia. Las entidades B/F/C/R sin correspondencia permanecen visibles.
 
 ## Reporte
 

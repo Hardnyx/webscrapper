@@ -9,6 +9,7 @@ from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from fuentes_financieras import source
 from fuentes_financieras.entities import EntityCatalog, correspondence_report, observation_changes
+from fuentes_financieras.entity_aliases import reviewed_aliases
 from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
@@ -21,6 +22,7 @@ LABELS = {
     'dataset': 'Dataset', 'match_status': 'Correspondencia', 'evidence': 'Evidencia',
     'first_observed': 'Primera observación', 'last_observed': 'Última observación',
     'previous_period': 'Observación anterior', 'change': 'Cambio observado',
+    'alias': 'Nombre equivalente', 'valid_from': 'Desde', 'valid_to': 'Hasta',
 }
 
 
@@ -84,6 +86,8 @@ def run(argv=None):
     write_report(report, {
         'Universo vigente observado': current, 'Historial capturas': universe,
         'Identidades': pd.DataFrame(catalog.records), 'Correspondencias': matches,
+        'Equivalencias revisadas': pd.DataFrame([*reviewed_aliases(catalog), *aliases],
+            columns=['dataset', 'entity_type_code', 'alias', 'entity_id', 'valid_from', 'valid_to', 'evidence']),
         'Cambios observados': observation_changes(universe, catalog, aliases), 'Cobertura local': summary,
     })
     catalog.save()

@@ -15,6 +15,13 @@ almacén local. `--force` solicita revalidación explícita. Una sincronización
 incompleta termina con código 1 y no exporta un Excel que parezca completo.
 La exportación incluye tabla, filtros, estilo claro 9 y encabezado inmovilizado.
 
+El aviso explícito SBS «No existe información para la fecha elegida» se
+registra como período no disponible, sin confundirlo con un cambio de
+estructura. Las respuestas incompletas sin ese aviso siguen siendo errores.
+Los períodos recientes no disponibles se reconsultan cuando vence el intervalo
+de refresco; `--force` permite revalidarlos antes. No se sustituye la fecha
+solicitada por otro período con datos.
+
 ## Valores cuota SMV
 
 ```powershell

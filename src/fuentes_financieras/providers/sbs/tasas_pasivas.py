@@ -141,6 +141,15 @@ def _has_four_tables(html: str) -> bool:
     )
 
 
+def _validate_published_tables(html: str):
+    if _has_four_tables(html):
+        return
+    text = _make_soup(html).get_text(' ', strip=True)
+    if re.search(r'No\s+existe\s+informaci[oó]n\s+para\s+la\s+fecha\s+elegida', text, re.I):
+        raise PeriodUnavailableError('SBS: No existe información para la fecha elegida.')
+    raise SchemaChangedError('Respuesta sin las cuatro tablas SBS.')
+
+
 def _dropdown_state(
     *,
     selected_index: int,
@@ -473,10 +482,7 @@ class PassiveRatesClient:
                 f"Solicitado {expected}; SBS devolvió {effective!r}."
             )
 
-        if not _has_four_tables(html):
-            raise SchemaChangedError(
-                "Respuesta sin las cuatro tablas SBS."
-            )
+        _validate_published_tables(html)
 
         return html, raw
 
@@ -508,10 +514,7 @@ class PassiveRatesClient:
                 f"Solicitado {year}-{month:02d}; SBS devolvió {effective!r}."
             )
 
-        if not _has_four_tables(html):
-            raise SchemaChangedError(
-                "Respuesta sin las cuatro tablas SBS."
-            )
+        _validate_published_tables(html)
 
         self.selected_year = year
         self.selected_month = month
@@ -520,7 +523,7 @@ class PassiveRatesClient:
 
 
 class PassiveRatesProvider(DatasetProvider):
-    parser_version = "2026-09-30.1"
+    parser_version = "2026-10-07.1"
     contract_version = "1"
 
     def __init__(self, spec):

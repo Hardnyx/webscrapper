@@ -8,6 +8,7 @@ import uuid
 import pandas as pd
 
 from .providers.sbs._universe_parser import normalized_entity_name
+from .entity_aliases import reviewed_aliases
 
 NAMESPACE = uuid.UUID('3152f1ba-22de-4a75-9c09-c43420df58f3')
 MATCH_COLUMNS = ['dataset', 'period', 'entity_type_code', 'entity_name',
@@ -90,6 +91,7 @@ class EntityCatalog:
 
 def correspondence_report(catalog, *, rates=None, ratings=None, aliases=()):
     rows = []
+    aliases = [*reviewed_aliases(catalog), *aliases]
     for dataset, frame, type_column in (
         ('pe.sbs.tasas_pasivas', rates, 'entity_type'),
         ('pe.sbs.clasificaciones_riesgo', ratings, 'entity_type_code'),
@@ -99,10 +101,15 @@ def correspondence_report(catalog, *, rates=None, ratings=None, aliases=()):
         columns = [type_column, 'entity_name', 'period_date']
         for row in frame[columns].drop_duplicates().to_dict('records'):
             period = str(row['period_date'])[:10]
-            identity, status, evidence = catalog.resolve(
-                dataset=dataset, type_code=row[type_column], name=row['entity_name'],
-                period=period, aliases=aliases,
-            )
+            if dataset == 'pe.sbs.tasas_pasivas' and normalized_entity_name(row['entity_name']) == 'PROMEDIO':
+                identity, status, evidence = None, 'aggregate', 'Fila Promedio publicada por SBS; no es una entidad.'
+            elif row[type_column] not in {'B', 'F', 'C', 'R'}:
+                identity, status, evidence = None, 'outside_scope', 'Tipo fuera del universo B/F/C/R.'
+            else:
+                identity, status, evidence = catalog.resolve(
+                    dataset=dataset, type_code=row[type_column], name=row['entity_name'],
+                    period=period, aliases=aliases,
+                )
             rows.append(dict(zip(MATCH_COLUMNS, [dataset, period, row[type_column],
                 row['entity_name'], identity, status, evidence])))
     return pd.DataFrame(rows, columns=MATCH_COLUMNS)

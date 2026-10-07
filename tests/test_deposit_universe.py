@@ -100,3 +100,25 @@ def test_cli_reports_missing_local_datasets(provider, tmp_path):
     assert list(wb['Universo vigente observado'].tables.values())[0].tableStyleInfo.name == 'TableStyleLight9'
     assert wb['Cobertura local']['C2'].value == 'Sin datos locales; no evaluado'
     assert wb['Correspondencias'].max_row == 1
+
+
+def test_reviewed_aliases_aggregates_scope_and_date_bounds(tmp_path):
+    universe = pd.DataFrame([
+        dict(entity_type_code='B', entity_name='BANBIF', period='2026-10-07', source_url='https://www.sbs.gob.pe'),
+        dict(entity_type_code='B', entity_name='SANTANDER PERU', period='2026-10-07', source_url='https://www.sbs.gob.pe'),
+        dict(entity_type_code='B', entity_name='BN. SANTANDER CONS.', period='2026-10-07', source_url='https://www.sbs.gob.pe'),
+    ])
+    catalog = EntityCatalog(tmp_path / 'identities.json')
+    catalog.observe(universe)
+    rates = pd.DataFrame([
+        dict(entity_type='B', entity_name=name, period_date='2026-10-06')
+        for name in ['BIF', 'Santander', 'Santander Cons. Bank', 'Promedio', 'Mitsui']
+    ])
+    report = correspondence_report(catalog, rates=rates)
+    assert report.match_status.tolist() == ['alias', 'alias', 'alias', 'aggregate', 'unmatched']
+    assert report.entity_id.iloc[1] != report.entity_id.iloc[2]
+    assert report.evidence.iloc[:3].str.contains('https://www.sbs.gob.pe').all()
+    rates['period_date'] = '2020-01-01'
+    assert correspondence_report(catalog, rates=rates).match_status.iloc[0] == 'unmatched'
+    ratings = pd.DataFrame([dict(entity_type_code='S', entity_name='INSURANCE', period_date='2026-09-30')])
+    assert correspondence_report(catalog, ratings=ratings).match_status.iloc[0] == 'outside_scope'
