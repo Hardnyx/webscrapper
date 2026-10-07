@@ -14,6 +14,13 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
+    'value': 'Valor publicado', 'unit_multiplier': 'Multiplicador a soles',
+    'source_metric': 'Indicador original', 'data_quality_flags': 'Avisos de calidad de fuente',
+    'source_sheet': 'Hoja fuente', 'source_row': 'Fila fuente',
+    'source_auxiliary_date': 'Fecha auxiliar del archivo', 'source_entity_name': 'Encabezado original',
+    'statement': 'Estado', 'section': 'Sección', 'account': 'Cuenta',
+    'source_account': 'Cuenta original', 'account_code': 'Código de cuenta',
+    'amount': 'Importe publicado', 'measurement_basis': 'Base de medición',
     'period': 'Fecha observación', 'period_date': 'Fecha dato',
     'entity_type_code': 'Tipo entidad', 'entity_type': 'Categoría',
     'entity_name': 'Nombre fuente', 'normalized_name': 'Nombre normalizado',

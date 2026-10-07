@@ -63,3 +63,5 @@ compilación de ejecutables en Windows. La curva soberana conserva un error
 explícito hasta completar su migración.
 
 `pe.sbs.estados_financieros` publica cuentas mensuales en formato largo y conserva sus originales Excel y notas. No consulta otros proveedores ni calcula ratios. El reporte se escribe en `outputs/estados_financieros/`.
+
+`_excel_mensual.py` concentra descubrimiento de enlaces oficiales, identificación del formato Excel, períodos, transporte y caché. Los parsers de estados financieros y solvencia siguen independientes. El comando de solvencia solicita sus dos datasets explícitamente y escribe en `outputs/solvencia/`.

@@ -28,6 +28,7 @@ Desde la raíz del repositorio:
 python scripts/sync_tasas_pasivas.py --tipos B C F R --desde 2026-09-01 --hasta 2026-09-30 --excel outputs/tasas_pasivas.xlsx
 python scripts/sync_valores_cuota.py --desde 2026-09-01 --hasta 2026-09-30
 python scripts/sync_estados_financieros.py --desde 2026-08
+python scripts/sync_solvencia.py --desde 2026-07
 python scripts/sync_clasificaciones_riesgo.py
 python scripts/sync_universo_depositos.py
 python scripts/sync_referencias_tasas_pasivas.py --desde 2026-10-05 --hasta 2026-10-06
@@ -117,3 +118,5 @@ El histórico completo se ejecuta primero localmente. Este repositorio no
 programa descargas ni publica datos mediante GitHub Actions.
 
 Los [estados financieros mensuales](docs/sbs-estados-financieros.md) incorporan balance y resultados B/F/C/R, con unidades y cobertura explícitas. Los archivos financieros usan nombres en español; consulta los comandos anteriores actualizados.
+
+La [solvencia mensual](docs/sbs-solvencia.md) incorpora requerimientos, APR, ratios de capital y composición del patrimonio efectivo B/F/C/R. Las unidades ambiguas y las inconsistencias publicadas quedan marcadas.

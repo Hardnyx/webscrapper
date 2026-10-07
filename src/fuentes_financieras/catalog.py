@@ -17,6 +17,22 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.sbs.solvencia": DatasetSpec(
+        dataset_id="pe.sbs.solvencia",
+        provider_class="fuentes_financieras.providers.sbs.solvencia:SolvencyProvider",
+        title="SBS - Requerimientos patrimoniales, APR y ratios de capital",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/solvencia", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; requerimientos y APR en miles de soles; ratios en porcentaje.",
+    ),
+    "pe.sbs.patrimonio_efectivo": DatasetSpec(
+        dataset_id="pe.sbs.patrimonio_efectivo",
+        provider_class="fuentes_financieras.providers.sbs.solvencia:EffectiveCapitalProvider",
+        title="SBS - Patrimonio efectivo y su composición",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/patrimonio_efectivo", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; unidades publicadas por cuadro; preserva ambigüedades e inconsistencias.",
+    ),
     "pe.sbs.estados_financieros": DatasetSpec(
         dataset_id="pe.sbs.estados_financieros",
         provider_class="fuentes_financieras.providers.sbs.estados_financieros:FinancialStatementsProvider",
