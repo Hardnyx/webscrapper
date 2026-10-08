@@ -14,6 +14,11 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
+    'deposit_type': 'Tipo de depósito', 'term_bucket': 'Tramo de plazo',
+    'funding_origin': 'Origen del acreedor', 'credit_type': 'Tipo de crédito',
+    'band_kind': 'Tipo de tramo de montos', 'band_lower_PEN': 'Límite inferior (soles)',
+    'band_upper_PEN': 'Límite superior (soles)', 'source_band_label': 'Tramo original',
+    'boundary_convention': 'Inclusión de límites',
     'value': 'Valor publicado', 'unit_multiplier': 'Multiplicador a unidades monetarias',
     'source_value': 'Valor almacenado en Excel', 'source_number_format': 'Formato numérico original',
     'observation_start': 'Inicio del período observado', 'observation_end': 'Fin del período observado',

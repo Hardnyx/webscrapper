@@ -17,6 +17,47 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.sbs.depositos_persona": DatasetSpec(
+        dataset_id="pe.sbs.depositos_persona",
+        provider_class="fuentes_financieras.providers.sbs.fondeo:DepositsByPersonProvider",
+        title="SBS - Depósitos por tipo, persona y entidad",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/depositos_persona", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; miles de soles; monedas agregadas, sin reconstruir columnas ausentes.",
+    ),
+    "pe.sbs.depositos_escalas": DatasetSpec(
+        dataset_id="pe.sbs.depositos_escalas",
+        provider_class="fuentes_financieras.providers.sbs.fondeo:DepositSizeBandsProvider",
+        title="SBS - Depósitos según escala de montos del sistema",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/depositos_escalas", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; agregado del sistema, sin concentración por entidad; números y montos publicados.",
+    ),
+    "pe.sbs.depositos_plazo": DatasetSpec(
+        dataset_id="pe.sbs.depositos_plazo",
+        provider_class="fuentes_financieras.providers.sbs.fondeo:DepositsByTermProvider",
+        title="SBS - Depósitos del público por moneda y plazo",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/depositos_plazo", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="Solo B/F; Reporte 6-B; MN miles de soles, ME miles de dólares; fecha original conservada.",
+    ),
+    "pe.sbs.adeudos": DatasetSpec(
+        dataset_id="pe.sbs.adeudos",
+        provider_class="fuentes_financieras.providers.sbs.fondeo:FinancialObligationsProvider",
+        title="SBS - Estructura de adeudos y obligaciones financieras",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/adeudos", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; participaciones en porcentaje, total en miles de soles.",
+    ),
+    "pe.sbs.castigos": DatasetSpec(
+        dataset_id="pe.sbs.castigos",
+        provider_class="fuentes_financieras.providers.sbs.castigos:CreditWriteoffsProvider",
+        title="SBS - Flujo mensual de créditos castigados",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/castigos", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; miles de soles; flujo mensual, sin reconstruir acumulados ni homogeneizar clasificaciones históricas.",
+    ),
+
     "pe.sbs.calidad_cartera": DatasetSpec(
         dataset_id="pe.sbs.calidad_cartera",
         provider_class="fuentes_financieras.providers.sbs.calidad_cartera:CreditQualityProvider",

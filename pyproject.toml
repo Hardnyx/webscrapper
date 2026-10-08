@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fuentes-financieras"
-version = "0.9.0"
+version = "0.10.0"
 description = "Reusable financial data scrapers with shared storage"
 requires-python = ">=3.11"
 dependencies = [
@@ -21,6 +21,8 @@ desktop = ["selenium>=4.20,<5"]
 dev = ["pytest>=8,<10"]
 
 [project.scripts]
+fuentes-sync-funding = "fuentes_financieras.cli.fondeo:main"
+fuentes-sync-writeoffs = "fuentes_financieras.cli.castigos:main"
 fuentes-sync-credit-quality = "fuentes_financieras.cli.calidad_cartera:main"
 fuentes-sync-liquidity = "fuentes_financieras.cli.liquidez:main"
 fuentes-sync-solvency = "fuentes_financieras.cli.solvencia:main"

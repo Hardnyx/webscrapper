@@ -31,6 +31,8 @@ python scripts/sync_estados_financieros.py --desde 2026-08
 python scripts/sync_solvencia.py --desde 2026-07
 python scripts/sync_liquidez.py --desde 2026-08
 python scripts/sync_calidad_cartera.py --desde 2026-08
+python scripts/sync_fondeo.py --datasets personas escalas --desde 2026-08
+python scripts/sync_castigos.py --desde 2026-08
 python scripts/sync_clasificaciones_riesgo.py
 python scripts/sync_universo_depositos.py
 python scripts/sync_referencias_tasas_pasivas.py --desde 2026-10-05 --hasta 2026-10-06
@@ -53,6 +55,8 @@ fuentes-sync-universe --help
 
 | Fuente | Acceso | Estado |
 | --- | --- | --- |
+| SBS fondeo | `source("pe.sbs.depositos_persona")`, escalas, plazos y adeudos | Personas y adeudos B/F/C/R; escalas agregadas del sistema; plazos B/F |
+| SBS castigos | `source("pe.sbs.castigos")` | Flujos mensuales por tipo de crédito B/F/C/R |
 | SBS calidad y provisiones | `source("pe.sbs.calidad_cartera")` y tres datasets complementarios | Ratios, categorías, morosidad por días y saldos B/F/C/R |
 | SBS liquidez MN/ME | `source("pe.sbs.liquidez")` | Mensual; importes y ratios B/F/C/R |
 | SBS cobertura de liquidez | `source("pe.sbs.cobertura_liquidez")` | Promedios trimestrales; período declarado separado del índice |
@@ -130,3 +134,5 @@ La [solvencia mensual](docs/sbs-solvencia.md) incorpora requerimientos, APR, rat
 La [liquidez SBS](docs/sbs-liquidez.md) incorpora liquidez MN/ME, cobertura y financiación neta estable como fuentes independientes, con fechas y escalas verificadas.
 
 La [calidad de cartera](docs/sbs-calidad-cartera.md) incluye provisiones como cobertura porcentual y como saldos del balance, con categorías y umbrales de atraso separados.
+
+El [fondeo y los castigos](docs/sbs-fondeo-castigos.md) incorporan depósitos, escalas de montos del sistema, plazos B/F, adeudos y flujos mensuales de créditos castigados. Las escalas no ofrecen concentración individual por contraparte.

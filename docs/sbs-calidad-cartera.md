@@ -114,7 +114,7 @@ En agosto, los indicadores ajustados C/R llevan referencias `****` y `*****`
 sin sus notas de definición completas en el archivo. Se marca esa limitación.
 La nota específica de Piura, situada en el segundo bloque, sí se conserva.
 El indicador ajustado B/F incorpora referencias a castigos y transferencias;
-no reemplaza la descarga de los flujos de castigos, que sigue pendiente.
+no reemplaza la descarga independiente de los [flujos mensuales de castigos](sbs-fondeo-castigos.md).
 
 ## Validación inicial
 

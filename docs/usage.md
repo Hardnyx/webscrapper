@@ -114,3 +114,16 @@ python scripts/sync_calidad_cartera.py --desde 2026-08 --datasets calidad catego
 
 [Contrato, bases crediticias y unidades](sbs-calidad-cartera.md). El reporte
 `outputs/calidad_cartera/calidad_cartera.xlsx` contiene una hoja por fuente seleccionada.
+
+## Fondeo y castigos SBS
+
+```powershell
+python scripts/sync_fondeo.py --datasets personas escalas --desde 2026-08
+python scripts/sync_fondeo.py --datasets plazos --desde 2026-08 --tipos B F
+python scripts/sync_fondeo.py --datasets adeudos --desde 2026-08 --tipos B C R
+python scripts/sync_fondeo.py --datasets adeudos --desde 2026-07 --tipos F
+python scripts/sync_castigos.py --desde 2026-08
+```
+
+[Alcances, fechas originales, unidades y disponibilidad](sbs-fondeo-castigos.md).
+Las escalas son agregados del sistema; los castigos son flujos mensuales.
