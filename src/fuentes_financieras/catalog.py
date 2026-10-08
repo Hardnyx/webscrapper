@@ -17,6 +17,39 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.sbs.calidad_cartera": DatasetSpec(
+        dataset_id="pe.sbs.calidad_cartera",
+        provider_class="fuentes_financieras.providers.sbs.calidad_cartera:CreditQualityProvider",
+        title="SBS - Calidad de activos y cobertura de provisiones",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/calidad_cartera", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; Solo indicadores de calidad; unidades porcentuales y definiciones originales.",
+    ),
+    "pe.sbs.categorias_riesgo_cartera": DatasetSpec(
+        dataset_id="pe.sbs.categorias_riesgo_cartera",
+        provider_class="fuentes_financieras.providers.sbs.calidad_cartera:CreditRiskCategoriesProvider",
+        title="SBS - Categorías de riesgo del deudor",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/categorias_riesgo_cartera", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; Participaciones y exposición total; créditos indirectos/contingentes según cuadro.",
+    ),
+    "pe.sbs.morosidad_dias": DatasetSpec(
+        dataset_id="pe.sbs.morosidad_dias",
+        provider_class="fuentes_financieras.providers.sbs.calidad_cartera:CreditArrearsProvider",
+        title="SBS - Morosidad por días de incumplimiento",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/morosidad_dias", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; Umbrales mayores de 30/60/90/120 días y criterio contable SBS separados.",
+    ),
+    "pe.sbs.saldos_cartera": DatasetSpec(
+        dataset_id="pe.sbs.saldos_cartera",
+        provider_class="fuentes_financieras.providers.sbs.saldos_cartera:CreditBalancesProvider",
+        title="SBS - Saldos de créditos y provisiones",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/saldos_cartera", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; Bloque crediticio del balance; miles de soles, signos originales y sin ratios calculados.",
+    ),
+
     "pe.sbs.liquidez": DatasetSpec(
         dataset_id="pe.sbs.liquidez",
         provider_class="fuentes_financieras.providers.sbs.liquidez:LiquidityProvider",

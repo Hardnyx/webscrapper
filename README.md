@@ -30,6 +30,7 @@ python scripts/sync_valores_cuota.py --desde 2026-09-01 --hasta 2026-09-30
 python scripts/sync_estados_financieros.py --desde 2026-08
 python scripts/sync_solvencia.py --desde 2026-07
 python scripts/sync_liquidez.py --desde 2026-08
+python scripts/sync_calidad_cartera.py --desde 2026-08
 python scripts/sync_clasificaciones_riesgo.py
 python scripts/sync_universo_depositos.py
 python scripts/sync_referencias_tasas_pasivas.py --desde 2026-10-05 --hasta 2026-10-06
@@ -52,6 +53,7 @@ fuentes-sync-universe --help
 
 | Fuente | Acceso | Estado |
 | --- | --- | --- |
+| SBS calidad y provisiones | `source("pe.sbs.calidad_cartera")` y tres datasets complementarios | Ratios, categorías, morosidad por días y saldos B/F/C/R |
 | SBS liquidez MN/ME | `source("pe.sbs.liquidez")` | Mensual; importes y ratios B/F/C/R |
 | SBS cobertura de liquidez | `source("pe.sbs.cobertura_liquidez")` | Promedios trimestrales; período declarado separado del índice |
 | SBS financiación neta estable | `source("pe.sbs.financiacion_neta_estable")` | Mensual; importes ponderados y ratio B/F/C/R |
@@ -126,3 +128,5 @@ Los [estados financieros mensuales](docs/sbs-estados-financieros.md) incorporan 
 La [solvencia mensual](docs/sbs-solvencia.md) incorpora requerimientos, APR, ratios de capital y composición del patrimonio efectivo B/F/C/R. Las unidades ambiguas y las inconsistencias publicadas quedan marcadas.
 
 La [liquidez SBS](docs/sbs-liquidez.md) incorpora liquidez MN/ME, cobertura y financiación neta estable como fuentes independientes, con fechas y escalas verificadas.
+
+La [calidad de cartera](docs/sbs-calidad-cartera.md) incluye provisiones como cobertura porcentual y como saldos del balance, con categorías y umbrales de atraso separados.

@@ -104,3 +104,13 @@ python scripts/sync_liquidez.py --datasets financiacion --desde 2026-07
 
 [Períodos, unidades y cobertura comprobada](sbs-liquidez.md). Los comandos exportan
 `liquidez.xlsx`, `cobertura_liquidez.xlsx` y `financiacion_neta_estable.xlsx`, respectivamente.
+
+## Calidad de cartera y provisiones SBS
+
+```powershell
+python scripts/sync_calidad_cartera.py --desde 2026-08
+python scripts/sync_calidad_cartera.py --desde 2026-08 --datasets calidad categorias morosidad saldos --load-only
+```
+
+[Contrato, bases crediticias y unidades](sbs-calidad-cartera.md). El reporte
+`outputs/calidad_cartera/calidad_cartera.xlsx` contiene una hoja por fuente seleccionada.

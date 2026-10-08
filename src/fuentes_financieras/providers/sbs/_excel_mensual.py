@@ -69,6 +69,21 @@ def read_workbook(content):
         raise SchemaChangedError('Libro Excel ilegible.') from exc
 
 
+def cell_formats(content, positions):
+    """Read number formats for explicit zero-based sheet/row/column positions."""
+    if content.startswith(b'PK'):
+        import openpyxl
+        book = openpyxl.load_workbook(BytesIO(content), read_only=True, data_only=True)
+        try:
+            return {key: book[key[0]].cell(key[1]+1, key[2]+1).number_format for key in positions}
+        finally:
+            book.close()
+    import xlrd
+    book = xlrd.open_workbook(file_contents=content, formatting_info=True)
+    return {key: book.format_map[book.xf_list[book.sheet_by_name(key[0]).cell(key[1], key[2]).xf_index].format_key].format_str
+            for key in positions}
+
+
 class MonthlyExcelProvider(DatasetProvider):
     codes = {}
 
