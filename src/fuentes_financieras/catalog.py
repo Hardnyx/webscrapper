@@ -17,6 +17,31 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.sbs.liquidez": DatasetSpec(
+        dataset_id="pe.sbs.liquidez",
+        provider_class="fuentes_financieras.providers.sbs.liquidez:LiquidityProvider",
+        title="SBS - Liquidez en moneda nacional y extranjera",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/liquidez", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; importes MN en miles de soles y ME en miles de dólares.",
+    ),
+    "pe.sbs.cobertura_liquidez": DatasetSpec(
+        dataset_id="pe.sbs.cobertura_liquidez",
+        provider_class="fuentes_financieras.providers.sbs.liquidez:LiquidityCoverageProvider",
+        title="SBS - Cobertura de liquidez",
+        country="PE", organization="SBS", frequency="quarterly",
+        storage_path="peru/sbs/cobertura_liquidez", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; promedio diario trimestral; mes del índice separado del trimestre observado.",
+    ),
+    "pe.sbs.financiacion_neta_estable": DatasetSpec(
+        dataset_id="pe.sbs.financiacion_neta_estable",
+        provider_class="fuentes_financieras.providers.sbs.liquidez:StableFundingProvider",
+        title="SBS - Financiación neta estable",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/financiacion_neta_estable", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; importes ponderados en miles de soles; formato Excel porcentual verificado.",
+    ),
+
     "pe.sbs.solvencia": DatasetSpec(
         dataset_id="pe.sbs.solvencia",
         provider_class="fuentes_financieras.providers.sbs.solvencia:SolvencyProvider",

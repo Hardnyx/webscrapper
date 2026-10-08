@@ -14,7 +14,10 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
-    'value': 'Valor publicado', 'unit_multiplier': 'Multiplicador a soles',
+    'value': 'Valor publicado', 'unit_multiplier': 'Multiplicador a unidades monetarias',
+    'source_value': 'Valor almacenado en Excel', 'source_number_format': 'Formato numérico original',
+    'observation_start': 'Inicio del período observado', 'observation_end': 'Fin del período observado',
+    'amount_basis': 'Base del importe',
     'source_metric': 'Indicador original', 'data_quality_flags': 'Avisos de calidad de fuente',
     'source_sheet': 'Hoja fuente', 'source_row': 'Fila fuente',
     'source_auxiliary_date': 'Fecha auxiliar del archivo', 'source_entity_name': 'Encabezado original',

@@ -93,3 +93,14 @@ lanzador Windows `tools/site_capture/run_site_dump.bat`.
 
 - `bash tools/git/dump_filetree.sh`: escribe el inventario de archivos versionados en `outputs/filetree.txt`.
 - `bash tools/git/commit_push.sh "feat(sbs): add a data source"`: revisa el estado, agrega los cambios, crea un commit convencional y ejecuta push.
+
+## Liquidez SBS
+
+```powershell
+python scripts/sync_liquidez.py --desde 2026-08
+python scripts/sync_liquidez.py --datasets cobertura --desde 2026-06
+python scripts/sync_liquidez.py --datasets financiacion --desde 2026-07
+```
+
+[Períodos, unidades y cobertura comprobada](sbs-liquidez.md). Los comandos exportan
+`liquidez.xlsx`, `cobertura_liquidez.xlsx` y `financiacion_neta_estable.xlsx`, respectivamente.

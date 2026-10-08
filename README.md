@@ -29,6 +29,7 @@ python scripts/sync_tasas_pasivas.py --tipos B C F R --desde 2026-09-01 --hasta 
 python scripts/sync_valores_cuota.py --desde 2026-09-01 --hasta 2026-09-30
 python scripts/sync_estados_financieros.py --desde 2026-08
 python scripts/sync_solvencia.py --desde 2026-07
+python scripts/sync_liquidez.py --desde 2026-08
 python scripts/sync_clasificaciones_riesgo.py
 python scripts/sync_universo_depositos.py
 python scripts/sync_referencias_tasas_pasivas.py --desde 2026-10-05 --hasta 2026-10-06
@@ -51,6 +52,9 @@ fuentes-sync-universe --help
 
 | Fuente | Acceso | Estado |
 | --- | --- | --- |
+| SBS liquidez MN/ME | `source("pe.sbs.liquidez")` | Mensual; importes y ratios B/F/C/R |
+| SBS cobertura de liquidez | `source("pe.sbs.cobertura_liquidez")` | Promedios trimestrales; período declarado separado del índice |
+| SBS financiación neta estable | `source("pe.sbs.financiacion_neta_estable")` | Mensual; importes ponderados y ratio B/F/C/R |
 | SBS tasas pasivas B/C/F/R | `source("pe.sbs.tasas_pasivas")` | Implementado; B/F diario, C/R mensual |
 | SBS referencias de tasas pasivas | `source("pe.sbs.tasas_pasivas_mercado")` | TIPMN/TIPMEX y FTIPMN/FTIPMEX; promedios por producto desde tasas locales |
 | SBS universo de depósitos | `source("pe.sbs.universo_depositos")` | Implementado; capturas fechadas y correspondencias locales |
@@ -66,7 +70,7 @@ El [universo de depósitos](docs/sbs-universo-depositos.md) incluye un catálogo
 identidades internas y un reporte Excel de correspondencias con tasas y
 clasificaciones. No determina elegibilidad regulatoria.
 
-Las [referencias de tasas pasivas](docs/sbs-passive-referencias_tasas.md) conservan
+Las [referencias de tasas pasivas](docs/sbs-referencias-tasas-pasivas.md) conservan
 separadas las bases sobre saldos y flujos y las ventanas diarias y mensuales.
 
 ## Uso desde Automatizaciones
@@ -120,3 +124,5 @@ programa descargas ni publica datos mediante GitHub Actions.
 Los [estados financieros mensuales](docs/sbs-estados-financieros.md) incorporan balance y resultados B/F/C/R, con unidades y cobertura explícitas. Los archivos financieros usan nombres en español; consulta los comandos anteriores actualizados.
 
 La [solvencia mensual](docs/sbs-solvencia.md) incorpora requerimientos, APR, ratios de capital y composición del patrimonio efectivo B/F/C/R. Las unidades ambiguas y las inconsistencias publicadas quedan marcadas.
+
+La [liquidez SBS](docs/sbs-liquidez.md) incorpora liquidez MN/ME, cobertura y financiación neta estable como fuentes independientes, con fechas y escalas verificadas.
