@@ -138,3 +138,11 @@ python scripts/sync_rentabilidad.py --desde 2026-08 --datasets eficiencia --tipo
 
 [Indicadores, anualización, unidades y límites de comparación](sbs-rentabilidad.md).
 El reporte es `outputs/rentabilidad_eficiencia/rentabilidad_eficiencia.xlsx`.
+
+## Tamaño y participación SBS
+
+```powershell
+python scripts/sync_participacion.py --desde 2026-08
+```
+
+[Alcance, unidades y rankings publicados](sbs-participacion.md).

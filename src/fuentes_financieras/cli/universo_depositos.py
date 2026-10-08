@@ -14,6 +14,8 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
+    'ranking_product': 'Producto del ranking', 'published_rank': 'Posición publicada',
+    'comparison_scope': 'Universo de comparación',
     'numerator_basis': 'Base del numerador', 'denominator_basis': 'Base del denominador',
     'annualization_definition': 'Definición de anualización',
     'source_auxiliary_entity_name': 'Nombre auxiliar publicado',

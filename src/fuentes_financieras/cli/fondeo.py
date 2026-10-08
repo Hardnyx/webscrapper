@@ -10,6 +10,8 @@ from .universo_depositos import write_report
 DATASETS = {'personas': 'pe.sbs.depositos_persona', 'escalas': 'pe.sbs.depositos_escalas',
             'adeudos': 'pe.sbs.adeudos', 'plazos': 'pe.sbs.depositos_plazo'}
 NOTICE_LABELS = {
+    'published_rank_sequence_review': 'Revisar secuencia de posiciones publicadas',
+    'published_cumulative_mismatch': 'Acumulado publicado distinto de la suma de participaciones',
     'source_auxiliary_entity_name': 'Nombre auxiliar de la fuente; equivalencia legal sin establecer',
     'source_value_missing': 'Valor ausente o marcador original',
     'source_entity_placeholder': 'Fila sin entidad identificable; nombre original numérico',

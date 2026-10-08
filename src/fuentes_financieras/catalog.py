@@ -17,6 +17,14 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.sbs.participacion": DatasetSpec(
+        dataset_id="pe.sbs.participacion",
+        provider_class="fuentes_financieras.providers.sbs.participacion:MarketParticipationProvider",
+        title="SBS - Tamaño, ranking y participación por entidad",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/participacion", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; posiciones y porcentajes publicados; banca sin sucursales en el exterior.",
+    ),
     "pe.sbs.rentabilidad": DatasetSpec(
         dataset_id="pe.sbs.rentabilidad",
         provider_class="fuentes_financieras.providers.sbs.rentabilidad:ProfitabilityProvider",
