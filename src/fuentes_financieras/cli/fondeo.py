@@ -10,6 +10,7 @@ from .universo_depositos import write_report
 DATASETS = {'personas': 'pe.sbs.depositos_persona', 'escalas': 'pe.sbs.depositos_escalas',
             'adeudos': 'pe.sbs.adeudos', 'plazos': 'pe.sbs.depositos_plazo'}
 NOTICE_LABELS = {
+    'source_auxiliary_entity_name': 'Nombre auxiliar de la fuente; equivalencia legal sin establecer',
     'source_value_missing': 'Valor ausente o marcador original',
     'source_entity_placeholder': 'Fila sin entidad identificable; nombre original numérico',
     'source_date_not_month_end': 'Fecha original distinta del cierre de mes',
@@ -20,9 +21,9 @@ NOTICE_LABELS = {
 }
 
 
-def run(argv=None, *, datasets=None, report_name='fondeo'):
+def run(argv=None, *, datasets=None, report_name='fondeo', description='Cuadros mensuales de fondeo o castigos SBS.'):
     choices = DATASETS if datasets is None else datasets
-    parser = argparse.ArgumentParser(description='Cuadros mensuales de fondeo o castigos SBS.')
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--datasets', nargs='+', choices=list(choices),
                         default=['personas', 'escalas', 'adeudos'] if datasets is None else list(choices))
     parser.add_argument('--desde', required=True, help='YYYY-MM')
@@ -56,7 +57,9 @@ def run(argv=None, *, datasets=None, report_name='fondeo'):
         flags += int((data.data_quality_flags != '').sum())
         report = data.copy()
         report['unit'] = report.unit.replace({'percent': 'Porcentaje', 'thousands_PEN': 'Miles de soles',
-                                             'thousands_USD': 'Miles de dólares', 'count': 'Número publicado'})
+                                             'thousands_USD': 'Miles de dólares', 'count': 'Número publicado', 'thousands_PEN_per_person': 'Miles de soles por persona',
+                                             'thousands_PEN_per_employee': 'Miles de soles por empleado',
+                                             'thousands_PEN_per_office': 'Miles de soles por oficina'})
         for code, label in NOTICE_LABELS.items():
             report['data_quality_flags'] = report.data_quality_flags.str.replace(code, label, regex=False)
         sheets[name] = report

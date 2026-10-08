@@ -33,6 +33,7 @@ python scripts/sync_liquidez.py --desde 2026-08
 python scripts/sync_calidad_cartera.py --desde 2026-08
 python scripts/sync_fondeo.py --datasets personas escalas --desde 2026-08
 python scripts/sync_castigos.py --desde 2026-08
+python scripts/sync_rentabilidad.py --desde 2026-08
 python scripts/sync_clasificaciones_riesgo.py
 python scripts/sync_universo_depositos.py
 python scripts/sync_referencias_tasas_pasivas.py --desde 2026-10-05 --hasta 2026-10-06
@@ -55,6 +56,7 @@ fuentes-sync-universe --help
 
 | Fuente | Acceso | Estado |
 | --- | --- | --- |
+| SBS rentabilidad y eficiencia | `source("pe.sbs.rentabilidad")` y `source("pe.sbs.eficiencia")` | ROA/ROE, ratios de gastos y productividad B/F/C/R; períodos y denominadores diferenciados |
 | SBS fondeo | `source("pe.sbs.depositos_persona")`, escalas, plazos y adeudos | Personas y adeudos B/F/C/R; escalas agregadas del sistema; plazos B/F |
 | SBS castigos | `source("pe.sbs.castigos")` | Flujos mensuales por tipo de crédito B/F/C/R |
 | SBS calidad y provisiones | `source("pe.sbs.calidad_cartera")` y tres datasets complementarios | Ratios, categorías, morosidad por días y saldos B/F/C/R |
@@ -136,3 +138,5 @@ La [liquidez SBS](docs/sbs-liquidez.md) incorpora liquidez MN/ME, cobertura y fi
 La [calidad de cartera](docs/sbs-calidad-cartera.md) incluye provisiones como cobertura porcentual y como saldos del balance, con categorías y umbrales de atraso separados.
 
 El [fondeo y los castigos](docs/sbs-fondeo-castigos.md) incorporan depósitos, escalas de montos del sistema, plazos B/F, adeudos y flujos mensuales de créditos castigados. Las escalas no ofrecen concentración individual por contraparte.
+
+La [rentabilidad y eficiencia](docs/sbs-rentabilidad.md) conserva ratios de utilidad anualizada, bases de comparación y unidades por persona u oficina, sin recalcular ni homogeneizar indicadores distintos.

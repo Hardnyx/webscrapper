@@ -14,6 +14,9 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
+    'numerator_basis': 'Base del numerador', 'denominator_basis': 'Base del denominador',
+    'annualization_definition': 'Definición de anualización',
+    'source_auxiliary_entity_name': 'Nombre auxiliar publicado',
     'deposit_type': 'Tipo de depósito', 'term_bucket': 'Tramo de plazo',
     'funding_origin': 'Origen del acreedor', 'credit_type': 'Tipo de crédito',
     'band_kind': 'Tipo de tramo de montos', 'band_lower_PEN': 'Límite inferior (soles)',

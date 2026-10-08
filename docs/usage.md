@@ -127,3 +127,14 @@ python scripts/sync_castigos.py --desde 2026-08
 
 [Alcances, fechas originales, unidades y disponibilidad](sbs-fondeo-castigos.md).
 Las escalas son agregados del sistema; los castigos son flujos mensuales.
+
+## Rentabilidad y eficiencia SBS
+
+```powershell
+python scripts/sync_rentabilidad.py --desde 2026-08
+python scripts/sync_rentabilidad.py --desde 2026-08 --datasets rentabilidad --tipos B F
+python scripts/sync_rentabilidad.py --desde 2026-08 --datasets eficiencia --tipos C R
+```
+
+[Indicadores, anualización, unidades y límites de comparación](sbs-rentabilidad.md).
+El reporte es `outputs/rentabilidad_eficiencia/rentabilidad_eficiencia.xlsx`.

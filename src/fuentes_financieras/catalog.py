@@ -17,6 +17,23 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.sbs.rentabilidad": DatasetSpec(
+        dataset_id="pe.sbs.rentabilidad",
+        provider_class="fuentes_financieras.providers.sbs.rentabilidad:ProfitabilityProvider",
+        title="SBS - Rentabilidad sobre activos y patrimonio",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/rentabilidad", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; ratios publicados de utilidad anualizada y denominadores promedio de doce meses.",
+    ),
+    "pe.sbs.eficiencia": DatasetSpec(
+        dataset_id="pe.sbs.eficiencia",
+        provider_class="fuentes_financieras.providers.sbs.rentabilidad:EfficiencyProvider",
+        title="SBS - Eficiencia y gestión",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/eficiencia", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; denominadores diferenciados, unidades por persona y oficina, períodos explícitos sin homogeneización implícita.",
+    ),
+
     "pe.sbs.depositos_persona": DatasetSpec(
         dataset_id="pe.sbs.depositos_persona",
         provider_class="fuentes_financieras.providers.sbs.fondeo:DepositsByPersonProvider",
