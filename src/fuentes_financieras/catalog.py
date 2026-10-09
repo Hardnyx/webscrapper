@@ -17,6 +17,14 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.sbs.anuncios_regulatorios": DatasetSpec(
+        dataset_id="pe.sbs.anuncios_regulatorios",
+        provider_class="fuentes_financieras.providers.sbs.anuncios_regulatorios:RegulatoryAnnouncementsProvider",
+        title="SBS - Anuncios regulatorios con evidencia",
+        country="PE", organization="SBS", frequency="announcement",
+        storage_path="peru/sbs/anuncios_regulatorios", network_transport="curl_cffi/chrome + HTML",
+        notes="URLs de noticias explícitas; intervención y disolución/liquidación en formatos fechados comprobados; sin fecha legal inferida.",
+    ),
     "pe.sbs.documentos_riesgo": DatasetSpec(
         dataset_id="pe.sbs.documentos_riesgo",
         provider_class="fuentes_financieras.providers.sbs.documentos_riesgo:RiskDocumentsProvider",

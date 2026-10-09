@@ -40,6 +40,14 @@ python scripts/sync_clasificaciones_riesgo.py --data-root data/sources --output-
 
 [Contrato y validación](sbs-clasificaciones-riesgo.md).
 
+## Anuncios regulatorios
+
+```powershell
+python scripts/sync_anuncios_regulatorios.py --urls https://www.sbs.gob.pe/noticia/detallenoticia/idnoticia/3749
+```
+
+Procesa enlaces explícitos de noticias SBS; `--load-only` exporta una selección íntegra desde caché. Las noticias sin disposición reconocida permanecen visibles para revisión. [Alcance y validación](sbs-anuncios-regulatorios.md).
+
 ## Tipo de cambio contable
 
 ```python

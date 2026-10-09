@@ -7,11 +7,12 @@
 | Ubicación | Responsabilidad |
 | --- | --- |
 | `api.py`, `catalog.py`, `registry.py` | API pública, catálogo y resolución de proveedores |
-| `providers/sbs/` | Universo de depósitos, tasas pasivas, clasificaciones, tipo de cambio contable y adaptador de curva soberana |
+| `providers/sbs/` | Proveedores independientes SBS: universo, tasas, clasificaciones, informes, anuncios y estadísticas financieras |
 | `providers/smv/` | Valores cuota, descubrimiento, capturas e histórico |
 | `transports/` | Clientes HTTP reutilizables |
 | `provider.py`, `storage.py`, `runtime.py` | Contrato, caché, manifiestos y ubicación de los datos |
 | `cli/` | Comandos instalables; sin instalación automática de dependencias |
+| `entities.py`, `eventos_riesgo.py` | Correspondencias y comparaciones consumidoras; sin sincronización automática de proveedores |
 | `sbs/` | Fachadas públicas de consulta para consumidores existentes |
 
 Los módulos `cli_rates.py`, `cli_smv.py` y `sbs_tipo_cambio.py` son puntos de
