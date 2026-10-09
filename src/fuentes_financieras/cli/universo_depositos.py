@@ -14,6 +14,11 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
+    'norm_id': 'Identificador del dispositivo legal', 'resolution_date': 'Fecha de la resolución',
+    'counterparty_name': 'Otra entidad mencionada en el artículo',
+    'absorbing_entity_name': 'Entidad absorbente explícita', 'absorbed_entity_name': 'Entidad absorbida explícita',
+    'roles_status': 'Evidencia de los roles societarios', 'effective_basis': 'Base de la fecha de vigencia',
+    'effective_condition': 'Texto restante del artículo; condiciones por revisar',
     'article_url': 'URL de noticia', 'listed_date': 'Fecha publicada en índice',
     'index_page': 'Página del índice', 'listed_pages_total': 'Última página indicada por SBS',
     'news_count': 'Noticias en página', 'selected_count': 'Noticias seleccionadas en página',

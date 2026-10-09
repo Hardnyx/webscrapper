@@ -17,6 +17,14 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.elperuano.fusiones": DatasetSpec(
+        dataset_id="pe.elperuano.fusiones",
+        provider_class="fuentes_financieras.providers.elperuano.fusiones:MergerResolutionsProvider",
+        title="El Peruano - Resoluciones SBS de fusión por absorción",
+        country="PE", organization="El Peruano / SBS", frequency="resolution",
+        storage_path="peru/elperuano/fusiones", network_transport="curl_cffi/chrome + HTML",
+        notes="URLs explícitas; primer artículo resolutivo; autorización y aclaración de fecha separadas; no acredita ejecución registral.",
+    ),
     "pe.sbs.indice_noticias": DatasetSpec(
         dataset_id="pe.sbs.indice_noticias",
         provider_class="fuentes_financieras.providers.sbs.indice_noticias:NewsIndexProvider",
