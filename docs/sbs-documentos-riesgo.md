@@ -2,7 +2,7 @@
 
 Dataset independiente: `pe.sbs.documentos_riesgo`.
 
-El proveedor recibe URLs oficiales explícitas. Descarga PDF completos, conserva sus versiones y extrae campos de la portada mediante reglas para formatos comprobados. La CLI consume expresamente `pe.sbs.informes_riesgo`; los proveedores no se sincronizan entre sí automáticamente.
+El proveedor recibe URLs oficiales explícitas. Descarga PDF completos, conserva sus versiones y extrae campos de portada y concentración mediante reglas para formatos comprobados. Revisa el texto de todas las páginas para localizar evidencia cualitativa candidata. La CLI consume expresamente `pe.sbs.informes_riesgo`; los proveedores no se sincronizan entre sí automáticamente.
 
 ## Uso
 
@@ -51,8 +51,17 @@ Cada registro conserva `report_id`, URL y cuatro identificadores SBS, `page_numb
 | JCR Latino America, código 001196 | Tabla Actual/Anterior de fortaleza y depósitos; perspectiva; fecha de comité asociada a la nota de información actual |
 | PCR, código 000409 | Tarjetas de fortaleza y depósitos antes de las definiciones; perspectiva separada; fecha de comité rotulada |
 | Moodys Local PE, código 000406 | Tabla de clasificaciones actuales de entidad, emisor y depósitos de corto plazo; perspectivas de entidad/emisor cuando aparecen; fechas de comité y publicación rotuladas |
+| MicroRate, código 000410 | Bloque de calificación crediticia y perspectiva; no se convierte en fortaleza financiera ni en rating de depósitos |
 
-Estas reglas describen estructuras concretas, no garantizan cobertura de todos los informes de cada clasificadora. La extracción se limita a la portada, aunque se comprueba la legibilidad y presencia de texto de todas las páginas. No extrae ratings desde párrafos narrativos, escalas explicativas o tablas históricas. La ausencia de un campo no implica que el producto carezca de rating.
+Estas reglas describen estructuras concretas, no garantizan cobertura de todos los informes de cada clasificadora. Los ratings se extraen únicamente de la portada. No extrae ratings desde párrafos narrativos, escalas explicativas o tablas históricas. La ausencia de un campo no implica que el producto carezca de rating.
+
+### Concentración y evidencia del cuerpo
+
+Las reglas de concentración reconocen dos estructuras fechadas comprobadas: el párrafo de JCR con los 10 y 20 principales depositantes y el paréntesis de Moodys con los principales depositantes. Cada cifra conserva `top_depositors`, `unit=percent`, `observation_period` (mes publicado), `denominator_basis`, página y pasaje. En JCR se reconoce el total de depósitos como denominador; en el paréntesis de Moodys permanece `unspecified_in_excerpt` porque no está explicitado allí. No se completa una fecha ausente ni se asocia un porcentaje cercano por aproximación.
+
+Se localizan hasta dos pasajes candidatos por documento para cada tema: estrategia, accionistas y soporte, costo de fondeo, factores de riesgo, menciones de eventos y concentración. Conservan texto y página, con `needs_review` y valor normalizado vacío. Las menciones pueden contener negaciones o explicaciones generales: **no constituyen eventos confirmados ni alertas automáticas**.
+
+La cobertura por tema informa cuántas cifras y candidatos se encontraron, páginas revisadas y páginas con texto. `not_found_in_text` significa que estas reglas no encontraron evidencia; no demuestra que el dato no exista. Un documento sin texto requiere OCR. No se realiza extracción cualitativa exhaustiva ni interpretación automática de los pasajes.
 
 `temporal_role=current/previous` se refiere a la posición en el bloque del informe, no a su vigencia hoy. `period_code` procede del enlace al resumen SBS y no reemplaza la fecha de comité ni la de publicación. Las fechas plurales sin correspondencia explícita mantienen `temporal_role=unspecified` y `needs_review`; no se asignan ordenándolas cronológicamente.
 
@@ -66,11 +75,11 @@ Los PDF se guardan en `data/sources/peru/sbs/documentos_riesgo/documents`, usand
 
 La descarga utiliza TLS verificado y un plazo de 180 segundos. Se exige una URL oficial HTTPS y se rechazan redirecciones finales fuera del destino. Se comprueban la cabecera PDF, el marcador de cierre, la estructura mediante lectura estricta, el cifrado y los límites de 20 MB/200 páginas. Una respuesta HTML o una transferencia incompleta no se guarda como PDF válido.
 
-El archivo se sustituye de forma atómica solo después de validarlo. La caché exige que la huella del PDF y los datos canónicos coincidan con el manifiesto. Un PDF ausente o corrupto se vuelve a solicitar durante `sync`; `--load-only` lo rechaza. Un fallo de red o estructura conserva la captura válida anterior. La lectura no convierte estos fallos en ausencia de rating.
+El archivo se sustituye de forma atómica solo después de validarlo. La caché exige que la huella del PDF y los datos canónicos coincidan con el manifiesto. Un PDF ausente o corrupto se vuelve a solicitar durante `sync`; `--load-only` lo rechaza. El contrato 2 vuelve a analizar los PDF íntegros del contrato 1 sin descargarlos de nuevo; `--load-only` exige una captura actualizada mediante `sync`. Un fallo de red o estructura conserva la captura válida anterior. La lectura no convierte estos fallos en ausencia de rating.
 
 ## Reporte y códigos de salida
 
-`outputs/documentos_riesgo/documentos_riesgo.xlsx` contiene campos y asociaciones publicadas con tablas, filtros y encabezados en español. La asociación de entidad/clasificadora se incorpora mediante una unión explícita por `report_id`, sin afirmar que se haya verificado la identidad legal dentro del documento.
+`outputs/documentos_riesgo/documentos_riesgo.xlsx` contiene las hojas `campos`, `referencias` y `cobertura` con tablas, filtros y encabezados en español. La asociación de entidad/clasificadora se incorpora mediante una unión explícita por `report_id`, sin afirmar que se haya verificado la identidad legal dentro del documento.
 
 - **0:** documentos seleccionados íntegros y todos los campos emitidos extraídos del formato reconocido; no certifica extracción exhaustiva del documento.
 - **1:** descarga, inventario o caché incompletos/dañados; no se exporta un reporte nuevo.
@@ -78,6 +87,8 @@ El archivo se sustituye de forma atómica solo después de validarlo. La caché 
 
 ## Validación realizada
 
-El 9 de octubre de 2026 se descargaron y revisaron visualmente cuatro informes reales enlazados desde el resumen 202601, uno por formato descrito. La extracción produjo 26 registros: 24 de bloques reconocidos y dos fechas de comité con asignación temporal pendiente.
+El 9 de octubre de 2026 se comprobó el código del proveedor con ocho PDF reales: cinco formatos de clasificadora, bancos, una financiera, una CMAC y una CRAC, incluyendo un informe histórico 202502. Las cuatro descargas adicionales se hicieron con el transporte del repositorio y TLS verificado. Los documentos e imágenes de prueba permanecen fuera del repositorio.
 
-Se comprobó el proveedor con esos bytes reales, una descarga directa adicional a través del proveedor, reutilización de caché sin red y exportación de tres selecciones desde caché. Las pruebas cubren PDF incompletos, HTML, cifrado, ausencia de texto, formatos desconocidos, versiones, fechas inválidas, corrupción de caché y conservación de archivos tras una descarga fallida. Esto no valida todo el histórico de PDF ni todas las entidades. Descargas, imágenes y reportes de prueba permanecen fuera del repositorio.
+La extracción produjo 113 registros: 45 campos reconocidos (incluidas tres cifras de concentración) y 68 pendientes de revisión (66 pasajes candidatos y dos fechas de comité). Para Alfin/JCR se reconocieron 9,7% y 13,2% de los depósitos en los 10 y 20 principales depositantes a diciembre de 2025, página 16. Para Banbif/Moodys se reconoció 22,30% para los 20 principales a diciembre de 2025, página 2, sin completar el denominador del pasaje. MicroRate produjo calificación crediticia y perspectiva para CMAC del Santa y CRAC Los Andes.
+
+Se comprobó la migración de los ocho PDF íntegros sin red, una segunda sincronización sin reprocesarlos y siete exportaciones desde caché. Las pruebas cubren porcentajes inválidos, fecha o denominador ausentes, comparativos no promovidos a cifra actual, negaciones en menciones de eventos, límites de candidatos, PDF incompletos, HTML, cifrado, OCR pendiente, versiones, corrupción de caché y conservación tras fallos. Esto no valida todo el histórico ni todas las entidades; la estructuración cualitativa y los eventos confirmados siguen pendientes.
