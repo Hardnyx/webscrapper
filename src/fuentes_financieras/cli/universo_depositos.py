@@ -14,6 +14,10 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
+    'article_url': 'URL de noticia', 'listed_date': 'Fecha publicada en índice',
+    'index_page': 'Página del índice', 'listed_pages_total': 'Última página indicada por SBS',
+    'news_count': 'Noticias en página', 'selected_count': 'Noticias seleccionadas en página',
+    'index_status': 'Alcance de la captura',
     'announcement_id': 'Identificador de noticia SBS', 'announcement_date': 'Fecha del anuncio',
     'effective_date': 'Fecha legal efectiva; no inferida', 'resolution_number': 'Resolución citada',
     'source_title': 'Título publicado', 'evidence_locator': 'Ubicación de evidencia en HTML',

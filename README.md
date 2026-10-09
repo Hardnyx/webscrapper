@@ -76,6 +76,7 @@ fuentes-sync-universe --help
 | SBS referencias de tasas pasivas | `source("pe.sbs.tasas_pasivas_mercado")` | TIPMN/TIPMEX y FTIPMN/FTIPMEX; promedios por producto desde tasas locales |
 | SBS universo de depósitos | `source("pe.sbs.universo_depositos")` | Implementado; capturas fechadas y correspondencias locales |
 | SMV valores cuota | `source("pe.smv.fondos_mutuos.valores_cuota")` | Implementado; capturas e histórico EVCP, todos los fondos y series |
+| SBS índice de noticias | `source("pe.sbs.indice_noticias")` | Páginas explícitas del listado, títulos completos, fechas, enlaces y cobertura de la captura |
 | SBS anuncios regulatorios | `source("pe.sbs.anuncios_regulatorios")` | Noticias explícitas de intervención y disolución/liquidación; fecha del anuncio, evidencia y cobertura limitada a formatos comprobados |
 | SBS documentos de riesgo | `source("pe.sbs.documentos_riesgo")` | PDF con huella y evidencia por página; portada, concentración fechada, pasajes cualitativos y cobertura por documento |
 | SBS inventario de informes | `source("pe.sbs.informes_riesgo")` | Enlaces, códigos y versiones por entidad/clasificadora; documentos pendientes de descargar |

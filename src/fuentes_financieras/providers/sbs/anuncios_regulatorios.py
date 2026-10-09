@@ -34,12 +34,19 @@ def announcement_reference(url):
         raise InvalidQueryError('Indique una URL de noticia oficial SBS.')
     parsed = urlsplit(url)
     match = re.fullmatch(r'/noticia/detallenoticia/idnoticia/(\d{1,10})/?', parsed.path, re.I)
-    query = parse_qs(parsed.query, keep_blank_values=True)
-    if (parsed.scheme != 'https' or parsed.netloc != 'www.sbs.gob.pe' or not match
-            or parsed.fragment or any(k.lower() != 'title' or len(v) != 1 for k, v in query.items())
-            or (parsed.query and not query) or len(query) > 1):
+    original = parse_qs(parsed.query, keep_blank_values=True)
+    query = {key.lower(): values for key, values in original.items()}
+    query_route = bool(re.fullmatch(r'/noticia/detallenoticia/?', parsed.path, re.I))
+    allowed = {'title', 'idnoticia'} if query_route else {'title'}
+    if (parsed.scheme != 'https' or parsed.netloc != 'www.sbs.gob.pe'
+            or not (match or query_route) or parsed.fragment
+            or len(query) != len(original) or any(k not in allowed or len(v) != 1 for k, v in query.items())
+            or (parsed.query and not query)):
         raise InvalidQueryError('Solo se admiten enlaces HTTPS oficiales de DetalleNoticia, con título opcional.')
-    identifier = str(int(match[1]))
+    raw_id = match[1] if match else query.get('idnoticia', [''])[0]
+    if not re.fullmatch(r'\d{1,10}', raw_id):
+        raise InvalidQueryError('Identificador de noticia ausente o inválido.')
+    identifier = str(int(raw_id))
     if identifier == '0':
         raise InvalidQueryError('Identificador de noticia inválido.')
     return identifier, 'https://www.sbs.gob.pe/noticia/detallenoticia/idnoticia/' + identifier

@@ -1,8 +1,8 @@
 # Anuncios regulatorios con evidencia
 
-Dataset independiente: `pe.sbs.anuncios_regulatorios`, contrato 1, incorporado en la versión 0.18.0.
+Dataset independiente: `pe.sbs.anuncios_regulatorios`, contrato 1, incorporado en la versión 0.18.0; descubrimiento explícito desde la versión 0.19.0.
 
-El proveedor recibe enlaces explícitos de noticias oficiales de la SBS y captura su contenido con TLS verificado. No consulta automáticamente la sala de prensa, otros proveedores o búsquedas externas. Se admite únicamente HTTPS en `www.sbs.gob.pe/noticia/detallenoticia/idnoticia/ID`, con un parámetro de título opcional que se elimina al construir el enlace canónico. Varias URLs del mismo identificador se procesan una sola vez.
+El proveedor recibe enlaces explícitos de noticias oficiales de la SBS y captura su contenido con TLS verificado. El proveedor de anuncios no consulta automáticamente otros proveedores ni búsquedas externas. La CLI puede consumir expresamente el índice independiente mediante `--descubrir`. Se admite únicamente HTTPS en `www.sbs.gob.pe/noticia/detallenoticia/idnoticia/ID`, o la ruta oficial `DetalleNoticia?IdNoticia=ID`, con un parámetro de título opcional que se elimina al construir el enlace canónico. Los identificadores duplicados o contradictorios se rechazan. Varias URLs del mismo identificador se procesan una sola vez.
 
 ## Ejecución
 
@@ -20,6 +20,36 @@ from fuentes_financieras import source
 announcements = source('pe.sbs.anuncios_regulatorios')
 announcements.sync(urls=urls, keep_raw=True)
 data = announcements.load(urls=urls)
+```
+
+## Descubrir enlaces del índice
+
+El dataset independiente `pe.sbs.indice_noticias` captura páginas seleccionadas del listado SBS. Conserva título completo, fecha publicada en la tarjeta, enlace canónico, número de página, última página indicada por el sitio y fecha de captura. No descarga artículos ni confirma eventos a partir del título.
+
+```bash
+# Revisar dos páginas del índice sin descargar sus artículos.
+python scripts/sync_anuncios_regulatorios.py --descubrir --paginas 1 2 --solo-indice
+
+# Consumir el índice y descargar las noticias seleccionadas por título y fecha.
+python scripts/sync_anuncios_regulatorios.py --descubrir --paginas 18 --desde 2024-07-11 --hasta 2024-07-11 --palabras Sullana
+
+# Repetir una revisión del índice desde capturas locales íntegras.
+python scripts/sync_anuncios_regulatorios.py --descubrir --paginas 1 2 --solo-indice --load-only
+```
+
+`--descubrir` y `--urls` son excluyentes. Sin `--paginas`, se revisa únicamente la página 1. Los filtros de fechas son inclusivos y se aplican a la fecha del índice, que permanece separada de la fecha escrita en el anuncio. Las palabras son subcadenas literales del título completo: basta una coincidencia, sin distinguir mayúsculas, conservando tildes. Una coincidencia selecciona un artículo para lectura; no confirma un evento.
+
+Las hojas `indice`, `seleccion` y `cobertura_indice` muestran todas las tarjetas capturadas, la selección única por identificador y el alcance de cada página. Si no hay coincidencias, se exporta la selección vacía con su cobertura, sin consultar artículos. `--solo-indice` tampoco accede a los artículos. Con `--load-only`, ambos datasets deben estar íntegros en caché para las referencias seleccionadas si se solicitan detalles.
+
+Cada respuesta debe identificar la página solicitada, su módulo y la última página publicada; una respuesta que repita la página 1 para otra página se rechaza. Se validan tarjetas completas, fechas y enlaces oficiales; referencias contradictorias entre páginas requieren una captura nueva. No se detiene el recorrido por una fecha antigua, porque no se presupone un orden cronológico perfecto. Las páginas se consideran mutables y se vuelven a comprobar al vencer el intervalo de refresco o con `--force`.
+
+La captura **solo cubre las páginas solicitadas**, incluso si el sitio muestra un número mayor de páginas. Las páginas pueden cambiar entre consultas; los tiempos de captura permanecen visibles. No se reconstruye una instantánea histórica del índice ni se deduplican actos legales por semejanza de títulos: diferentes identificadores pueden corresponder a publicaciones sobre el mismo hecho.
+
+```python
+index = source('pe.sbs.indice_noticias')
+index.sync(paginas=[1, 2], keep_raw=True)
+links = index.load(paginas=[1, 2])
+announcements.sync(urls=links.article_url.drop_duplicates().tolist())
 ```
 
 ## Qué se reconoce
@@ -51,4 +81,6 @@ Se rechazan HTML incompletos, contenido mayor de 2 MB, redirecciones a otra noti
 
 Se descargaron cinco noticias reales desde este entorno mediante el proveedor del repositorio: intervenciones de CMAC Sullana, Financiera Credinka y CRAC Raíz; disolución e inicio de liquidación de CRAC Raíz; y una noticia general de regulación cooperativa. Se reconocieron cuatro disposiciones; la noticia general permaneció sin evento confirmado. Se comprobaron reutilización inmediata de caché y exportación sin red. HTML, cachés y reportes de validación están fuera del repositorio.
 
-El alcance sigue siendo parcial: no hay descubrimiento automático de noticias, archivo exhaustivo de resoluciones, extracción de fusiones o autorizaciones, retiros de rating confirmados por clasificadoras ni envío de alertas. Las transferencias de bloques patrimoniales no se convierten automáticamente en fusiones. Esos formatos requieren fuentes y validación propias.
+Se validaron además tres páginas reales del índice (1, 2 y 18), con 45 noticias y paginación comprobada, reutilización de caché y exportación sin red. La CLI se verificó seleccionando anuncios desde el índice y descargando sus detalles, sin proporcionar URLs manuales. Las pruebas también cubren páginas equivocadas, tarjetas incompletas, fechas inválidas, enlaces ambiguos, filtros literales y selecciones vacías.
+
+El alcance sigue siendo parcial: no hay recorrido exhaustivo predeterminado de todo el índice, archivo exhaustivo de resoluciones, extracción de fusiones o autorizaciones, retiros de rating confirmados por clasificadoras ni envío de alertas. Las transferencias de bloques patrimoniales no se convierten automáticamente en fusiones. Esos formatos requieren fuentes y validación propias.

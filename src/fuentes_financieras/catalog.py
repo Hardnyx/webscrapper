@@ -17,6 +17,14 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.sbs.indice_noticias": DatasetSpec(
+        dataset_id="pe.sbs.indice_noticias",
+        provider_class="fuentes_financieras.providers.sbs.indice_noticias:NewsIndexProvider",
+        title="SBS - Índice paginado de noticias",
+        country="PE", organization="SBS", frequency="snapshot",
+        storage_path="peru/sbs/indice_noticias", network_transport="curl_cffi/chrome + HTML",
+        notes="Páginas explícitas del índice; títulos, fechas y enlaces; no descarga artículos ni confirma eventos.",
+    ),
     "pe.sbs.anuncios_regulatorios": DatasetSpec(
         dataset_id="pe.sbs.anuncios_regulatorios",
         provider_class="fuentes_financieras.providers.sbs.anuncios_regulatorios:RegulatoryAnnouncementsProvider",
