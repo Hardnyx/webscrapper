@@ -14,6 +14,7 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
+    'denominator_period': 'Mes del denominador', 'denominator_date': 'Fecha del denominador',
     'ranking_product': 'Producto del ranking', 'published_rank': 'Posición publicada',
     'comparison_scope': 'Universo de comparación',
     'numerator_basis': 'Base del numerador', 'denominator_basis': 'Base del denominador',

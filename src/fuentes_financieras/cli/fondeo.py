@@ -23,11 +23,11 @@ NOTICE_LABELS = {
 }
 
 
-def run(argv=None, *, datasets=None, report_name='fondeo', description='Cuadros mensuales de fondeo o castigos SBS.'):
+def run(argv=None, *, datasets=None, default_datasets=None, report_name='fondeo', description='Cuadros mensuales de fondeo o castigos SBS.'):
     choices = DATASETS if datasets is None else datasets
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--datasets', nargs='+', choices=list(choices),
-                        default=['personas', 'escalas', 'adeudos'] if datasets is None else list(choices))
+                        default=default_datasets if default_datasets is not None else (['personas', 'escalas', 'adeudos'] if datasets is None else list(choices)))
     parser.add_argument('--desde', required=True, help='YYYY-MM')
     parser.add_argument('--hasta', help='YYYY-MM; por defecto --desde')
     parser.add_argument('--tipos', nargs='+', choices=list('BFCR'), default=list('BFCR'))
@@ -38,6 +38,8 @@ def run(argv=None, *, datasets=None, report_name='fondeo', description='Cuadros 
     args = parser.parse_args(argv)
     if 'plazos' in args.datasets and set(args.tipos)-set('BF'):
         parser.error('Plazos solo admite B/F: indique --tipos B F. No se omiten cajas silenciosamente.')
+    if choices.get('capital') == 'pe.sbs.posicion_cambiaria_capital' and 'capital' in args.datasets and set(args.tipos)-set('CR'):
+        parser.error('Ratio cambiario sobre capital solo admite C/R: indique --tipos C R.')
     if args.data_root:
         os.environ['FINANCIAL_SOURCES_DATA_ROOT'] = str(args.data_root.resolve())
     get_provider.cache_clear()

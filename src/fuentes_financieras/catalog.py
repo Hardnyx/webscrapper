@@ -17,6 +17,23 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.sbs.posicion_cambiaria": DatasetSpec(
+        dataset_id="pe.sbs.posicion_cambiaria",
+        provider_class="fuentes_financieras.providers.sbs.riesgo_cambiario:ForeignExchangePositionProvider",
+        title="SBS - Posición global en moneda extranjera",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/posicion_cambiaria", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="B/F/C/R; balance, derivados y delta de opciones en miles de soles, con signos originales.",
+    ),
+    "pe.sbs.posicion_cambiaria_capital": DatasetSpec(
+        dataset_id="pe.sbs.posicion_cambiaria_capital",
+        provider_class="fuentes_financieras.providers.sbs.riesgo_cambiario:ForeignExchangeCapitalRatioProvider",
+        title="SBS - Posición cambiaria sobre patrimonio efectivo",
+        country="PE", organization="SBS", frequency="monthly",
+        storage_path="peru/sbs/posicion_cambiaria_capital", network_transport="curl_cffi/chrome + Excel XLS/XLSX",
+        notes="Solo C/R; porcentaje publicado con patrimonio efectivo del mes anterior explícito.",
+    ),
+
     "pe.sbs.participacion": DatasetSpec(
         dataset_id="pe.sbs.participacion",
         provider_class="fuentes_financieras.providers.sbs.participacion:MarketParticipationProvider",

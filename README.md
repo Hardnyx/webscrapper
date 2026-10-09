@@ -35,6 +35,8 @@ python scripts/sync_fondeo.py --datasets personas escalas --desde 2026-08
 python scripts/sync_castigos.py --desde 2026-08
 python scripts/sync_rentabilidad.py --desde 2026-08
 python scripts/sync_participacion.py --desde 2026-08
+python scripts/sync_riesgo_cambiario.py --desde 2026-07
+python scripts/sync_riesgo_cambiario.py --datasets capital --desde 2026-08 --tipos C R
 python scripts/sync_clasificaciones_riesgo.py
 python scripts/sync_universo_depositos.py
 python scripts/sync_referencias_tasas_pasivas.py --desde 2026-10-05 --hasta 2026-10-06
@@ -57,6 +59,7 @@ fuentes-sync-universe --help
 
 | Fuente | Acceso | Estado |
 | --- | --- | --- |
+| SBS riesgo cambiario | `source("pe.sbs.posicion_cambiaria")` / `source("pe.sbs.posicion_cambiaria_capital")` | Posición B/F/C/R en miles de soles; ratio C/R con patrimonio del mes anterior |
 | SBS tamaño y participación | `source("pe.sbs.participacion")` | Rankings mensuales de créditos, depósitos y patrimonio B/F/C/R |
 | SBS rentabilidad y eficiencia | `source("pe.sbs.rentabilidad")` y `source("pe.sbs.eficiencia")` | ROA/ROE, ratios de gastos y productividad B/F/C/R; períodos y denominadores diferenciados |
 | SBS fondeo | `source("pe.sbs.depositos_persona")`, escalas, plazos y adeudos | Personas y adeudos B/F/C/R; escalas agregadas del sistema; plazos B/F |
@@ -144,3 +147,5 @@ El [fondeo y los castigos](docs/sbs-fondeo-castigos.md) incorporan depósitos, e
 La [rentabilidad y eficiencia](docs/sbs-rentabilidad.md) conserva ratios de utilidad anualizada, bases de comparación y unidades por persona u oficina, sin recalcular ni homogeneizar indicadores distintos.
 
 El [tamaño y participación](docs/sbs-participacion.md) conserva importes, posiciones, porcentajes individuales y acumulados publicados, con su universo de comparación.
+
+El [riesgo cambiario](docs/sbs-riesgo-cambiario.md) conserva balance, derivados, delta de opciones y posición global, además del ratio publicado de cajas con el mes del patrimonio efectivo explícito.
