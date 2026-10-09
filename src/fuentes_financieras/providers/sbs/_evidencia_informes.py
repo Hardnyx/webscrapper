@@ -1,0 +1,65 @@
+"""Dated deposit concentration and reviewable qualitative evidence from PDF text."""
+import re
+
+TOPICS = {
+    'strategy': r'estrategia|plan estrat[eé]gico|modelo de negocio',
+    'ownership_support': r'accionistas?|respaldo de su principal|soporte patrimonial|grupo controlador',
+    'funding_cost': r'costo de fondeo|costo de fondos|costos? de captaci[oó]n',
+    'risk_drivers': r'limitantes|debilidades|vulnerabilidades|riesgo de (?:liquidez|cr[eé]dito|mercado|concentraci[oó]n)',
+    'event_mentions': r'intervenci[oó]n|fusiones?|fusi[oó]n|absorci[oó]n|retiro de (?:rating|clasificaci[oó]n)|sanciones?',
+    'deposit_concentration': r'(?:principales|mayores) depositantes|concentraci[oó]n de depositantes',
+}
+MONTHS = dict(zip('enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre'.split(),range(1,13)))
+MONTHS['setiembre']=9
+
+
+def concentration_fields(text, *, agency_code):
+    """Extract only the two tested dated sentences, retaining denominator limits."""
+    found=[]
+    patterns=[]
+    if agency_code=='001196':
+        patterns=[(r'al cierre de ([a-z]+) de (\d{4}),? los (\d+) principales depositantes representaron el ([\d.,]+)% del total de depósitos, mientras que los (\d+) principales concentraron el ([\d.,]+)%', 'total_deposits')]
+    elif agency_code=='000406':
+        patterns=[(r'concentración de depositantes \(([\d.,]+)% los (\d+) principales a ([a-z]+) de (\d{4})\)', 'unspecified_in_excerpt')]
+    for pattern,basis in patterns:
+        for match in re.finditer(pattern,text,re.I):
+            if agency_code=='001196':month,year,n1,v1,n2,v2=match.groups();pairs=[(n1,v1),(n2,v2)]
+            else:v,n,month,year=match.groups();pairs=[(n,v)]
+            if month.lower() not in MONTHS or not 1900<=int(year)<=2100:continue
+            for n,raw in pairs:
+                # A mixed decimal/thousands separator is ambiguous in a percentage.
+                if not re.fullmatch(r'\d+(?:[.,]\d+)?', raw):continue
+                value=float(raw.replace(',','.'))
+                if not 0<=value<=100 or not 1<=int(n)<=1000:continue
+                found.append(dict(field_kind='deposit_concentration',field_label='Principales depositantes',
+                    value_raw=raw+'%',normalized_value=str(value),unit='percent',top_depositors=int(n),
+                    observation_period=f'{year}-{MONTHS[month.lower()]:02d}',denominator_basis=basis,
+                    temporal_role='dated_observation',extraction_status='extracted',evidence_text=match[0]))
+    return found
+
+
+def extract_body_evidence(texts, *, agency_code):
+    fields=[];counts={topic:0 for topic in TOPICS};seen=set()
+    for page_number,raw in enumerate(texts,1):
+        text=re.sub(r'\s+',' ',raw).strip()
+        for field in concentration_fields(text,agency_code=agency_code):
+            fields.append(dict(page_number=page_number,**field))
+        for topic,pattern in TOPICS.items():
+            for match in re.finditer(pattern,text,re.I):
+                if counts[topic]>=2:break
+                start=max(0,match.start()-140);end=min(len(text),match.end()+260)
+                excerpt=text[start:end]
+                key=(topic,excerpt)
+                if key in seen:continue
+                seen.add(key);counts[topic]+=1
+                fields.append(dict(page_number=page_number,field_kind='qualitative_'+topic,
+                    field_label=match[0],value_raw=excerpt,normalized_value='',temporal_role='unspecified',
+                    extraction_status='needs_review',evidence_text=excerpt))
+    coverage=[]
+    has_text=any(t.strip() for t in texts)
+    for topic in TOPICS:
+        recognized=sum(f['field_kind']=='deposit_concentration' for f in fields) if topic=='deposit_concentration' else 0
+        coverage.append(dict(topic=topic,recognized_count=recognized,candidate_count=counts[topic],
+            coverage_status='needs_ocr' if not has_text else 'recognized' if recognized else 'needs_review' if counts[topic] else 'not_found_in_text',
+            pages_checked=len(texts),text_pages=sum(bool(t.strip()) for t in texts)))
+    return fields,coverage

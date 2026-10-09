@@ -14,6 +14,9 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
+    'top_depositors': 'Número de principales depositantes', 'observation_period': 'Mes observado',
+    'topic': 'Tema', 'recognized_count': 'Cifras reconocidas', 'candidate_count': 'Pasajes candidatos',
+    'coverage_status': 'Estado de cobertura', 'pages_checked': 'Páginas revisadas', 'text_pages': 'Páginas con texto',
     'field_kind': 'Tipo de campo', 'field_label': 'Etiqueta original', 'value_raw': 'Valor original',
     'normalized_value': 'Valor normalizado', 'temporal_role': 'Vigencia indicada en el bloque',
     'extraction_status': 'Estado de extracción', 'evidence_text': 'Texto de evidencia',

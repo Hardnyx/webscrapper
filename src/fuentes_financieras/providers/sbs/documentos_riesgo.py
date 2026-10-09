@@ -48,6 +48,14 @@ def extract_cover_fields(text, *, agency_code):
         fields.append(dict(field_kind=kind, field_label=label, value_raw=value,
                            normalized_value=value, temporal_role=role,
                            extraction_status=status, evidence_text=evidence))
+    if agency_code == '000410' and 'CALIFICACIÓN CREDITICIA' in lines and 'CALIFICACIÓN PERSPECTIVA' in lines:
+        index=lines.index('CALIFICACIÓN PERSPECTIVA')
+        if index+1<len(lines):
+            match=re.fullmatch(r'([A-D][+−-]?) (Estable|Positiva|Negativa)',lines[index+1])
+            if match:
+                evidence='CALIFICACIÓN CREDITICIA\nCALIFICACIÓN PERSPECTIVA\n'+lines[index+1]
+                add('credit_rating','Calificación crediticia',match[1],evidence)
+                add('credit_rating_outlook','Perspectiva de calificación crediticia',match[2],evidence)
     if agency_code == '000409':
         # Current PCR cards precede the definitions and historical table.
         stop = next((i for i,line in enumerate(lines) if line.casefold() == 'significado de la calificación'), None)
@@ -142,19 +150,27 @@ def parse_document(content, *, reference, retrieved_at):
         status='needs_ocr' if not any(t.strip() for t in texts) else 'unsupported_cover'
         fields=[dict(field_kind='document',field_label='',value_raw='',normalized_value='',temporal_role='unspecified',
                      extraction_status=status,evidence_text='')]
+    from ._evidencia_informes import extract_body_evidence
+    body_fields,coverage=extract_body_evidence(texts,agency_code=reference['report_agency_code'])
+    fields=[dict(page_number=1,**field) for field in fields]+body_fields
+    for field in fields:
+        field.setdefault('unit','')
+        field.setdefault('top_depositors',None)
+        field.setdefault('observation_period','')
+        field.setdefault('denominator_basis','')
     year,semester,_,period=period_parts(reference['report_period_code'])
     records=[dict(**reference,period_code=reference['report_period_code'],period=period,year=year,semester=semester,
-        page_number=1,**field,pdf_sha256=digest,source='SBS',source_url=reference['report_url'],retrieved_at=retrieved_at) for field in fields]
+        **field,pdf_sha256=digest,source='SBS',source_url=reference['report_url'],retrieved_at=retrieved_at) for field in fields]
     data=pd.DataFrame(records)
-    for col in data:data[col]=data[col].astype('int64' if col in ('year','semester','page_number') else 'string')
+    for col in data:data[col]=data[col].astype('Int64' if col=='top_depositors' else 'int64' if col in ('year','semester','page_number') else 'string')
     metadata=dict(pdf_sha256=digest,page_count=len(texts),text_pages=sum(bool(t.strip()) for t in texts),
-                  extraction_scope='cover_page_only',field_counts=data.extraction_status.value_counts().to_dict())
+                  extraction_scope='cover_and_body_evidence',coverage=coverage,field_counts=data.extraction_status.value_counts().to_dict())
     return data,metadata
 
 
 class RiskDocumentsProvider(DatasetProvider):
-    parser_version='2026-10-09.1'
-    contract_version='1'
+    parser_version='2026-10-09.2'
+    contract_version='2'
 
     def __init__(self,spec):
         super().__init__(spec)

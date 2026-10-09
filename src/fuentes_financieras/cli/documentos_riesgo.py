@@ -55,13 +55,32 @@ def run(argv=None):
     pending=int((fields.extraction_status!='extracted').sum())
     report['extraction_status']=report.extraction_status.replace({'extracted':'Extraído del formato reconocido',
         'needs_review':'Requiere revisión', 'needs_ocr':'Sin texto; requiere OCR', 'unsupported_cover':'Portada sin formato reconocido'})
-    report['temporal_role']=report.temporal_role.replace({'current':'Actual según el bloque fuente','previous':'Anterior según el bloque fuente','unspecified':'Sin asignación temporal'})
+    report['temporal_role']=report.temporal_role.replace({'current':'Actual según el bloque fuente','previous':'Anterior según el bloque fuente','unspecified':'Sin asignación temporal','dated_observation':'Observación con mes publicado'})
+    report['unit']=report.unit.replace({'percent':'Porcentaje'})
+    report['denominator_basis']=report.denominator_basis.replace({'total_deposits':'Total de depósitos',
+        'unspecified_in_excerpt':'No especificado en el pasaje'})
     report['field_kind']=report.field_kind.replace({'financial_strength':'Fortaleza financiera','entity_rating':'Clasificación de entidad',
         'issuer_rating':'Clasificación de emisor','short_term_deposits':'Depósitos de corto plazo','medium_long_term_deposits':'Depósitos de mediano y largo plazo',
-        'long_term_deposits':'Depósitos de largo plazo','outlook':'Perspectiva del informe','entity_rating_outlook':'Perspectiva de entidad',
+        'deposit_concentration':'Concentración de depositantes', 'credit_rating':'Calificación crediticia',
+        'credit_rating_outlook':'Perspectiva de calificación crediticia', 'long_term_deposits':'Depósitos de largo plazo','outlook':'Perspectiva del informe','entity_rating_outlook':'Perspectiva de entidad',
         'issuer_rating_outlook':'Perspectiva de emisor','committee_date':'Fecha de comité','publication_date':'Fecha de publicación','document':'Documento pendiente de extracción'})
+    topic_labels={'strategy':'Estrategia', 'ownership_support':'Accionistas y soporte', 'funding_cost':'Costo de fondeo',
+        'risk_drivers':'Factores de riesgo', 'event_mentions':'Menciones de eventos; sin confirmar', 'deposit_concentration':'Concentración de depositantes'}
+    for topic,label in topic_labels.items():
+        report['field_kind']=report.field_kind.replace({'qualitative_'+topic:'Evidencia candidata: '+label})
     path=args.output_dir.resolve()/'documentos_riesgo.xlsx'
-    write_report(path,{'campos':report,'referencias':associations})
+    import pandas as pd
+    coverage=[]
+    for report_id in sorted(expected):
+        metadata=documents.storage.manifest.get(report_id).get('metadata',{})
+        for item in metadata.get('coverage',[]):coverage.append(dict(report_id=report_id,**item))
+    coverage_frame=pd.DataFrame(coverage)
+    if not coverage_frame.empty:
+        coverage_frame=coverage_frame.merge(associations,on='report_id',how='left')
+        coverage_frame['coverage_status']=coverage_frame.coverage_status.replace({'recognized':'Cifra reconocida',
+            'needs_review':'Evidencia candidata; revisar', 'not_found_in_text':'No encontrado en el texto; no implica inexistencia', 'needs_ocr':'Requiere OCR'})
+    if not coverage_frame.empty:coverage_frame['topic']=coverage_frame.topic.replace(topic_labels)
+    write_report(path,{'campos':report,'referencias':associations,'cobertura':coverage_frame})
     print(f'Documentos: {len(expected)}; campos: {len(fields)}; pendientes de revisión/extracción: {pending}; reporte: {path}')
     return 0 if pending==0 else 2
 

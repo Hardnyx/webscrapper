@@ -23,7 +23,7 @@ CATALOG: dict[str, DatasetSpec] = {
         title="SBS - Documentos y campos de clasificación con evidencia",
         country="PE", organization="SBS", frequency="document",
         storage_path="peru/sbs/documentos_riesgo", network_transport="curl_cffi/chrome + PDF",
-        notes="URLs explícitas; PDF íntegro con SHA-256; extracción conservadora de portada por formato reconocido.",
+        notes="URLs explícitas; PDF íntegro con SHA-256; portada, concentración fechada y evidencia cualitativa para revisión.",
     ),
     "pe.sbs.informes_riesgo": DatasetSpec(
         dataset_id="pe.sbs.informes_riesgo",
