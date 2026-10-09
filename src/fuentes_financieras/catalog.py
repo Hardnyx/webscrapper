@@ -17,6 +17,14 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.clasificadoras.retiros": DatasetSpec(
+        dataset_id="pe.clasificadoras.retiros",
+        provider_class="fuentes_financieras.providers.clasificadoras.retiros_clasificaciones:RatingWithdrawalsProvider",
+        title="Clasificadoras - Retiros explícitos de clasificaciones",
+        country="PE", organization="Moody’s Local Perú / Apoyo & Asociados", frequency="announcement",
+        storage_path="peru/clasificadoras/retiros", network_transport="curl_cffi/chrome + PDF",
+        notes="PDF oficiales explícitos; fecha, alcance y evidencia de retiro; no infiere retiro total, deterioro ni pérdida de autorización.",
+    ),
     "pe.elperuano.fusiones": DatasetSpec(
         dataset_id="pe.elperuano.fusiones",
         provider_class="fuentes_financieras.providers.elperuano.fusiones:MergerResolutionsProvider",

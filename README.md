@@ -78,6 +78,7 @@ fuentes-sync-universe --help
 | SMV valores cuota | `source("pe.smv.fondos_mutuos.valores_cuota")` | Implementado; capturas e histórico EVCP, todos los fondos y series |
 | SBS índice de noticias | `source("pe.sbs.indice_noticias")` | Páginas explícitas del listado, títulos completos, fechas, enlaces y cobertura de la captura |
 | El Peruano fusiones SBS | `source("pe.elperuano.fusiones")` | Autorizaciones y aclaraciones de vigencia en artículos resolutivos; entidades, evidencia y roles explícitos; ejecución sin inferir |
+| Clasificadoras retiros | `source("pe.clasificadoras.retiros")` | PDF oficiales de Moody’s Local Perú y Apoyo & Asociados; retiros explícitos con fecha, alcance, motivo y evidencia |
 | SBS anuncios regulatorios | `source("pe.sbs.anuncios_regulatorios")` | Noticias explícitas de intervención y disolución/liquidación; fecha del anuncio, evidencia y cobertura limitada a formatos comprobados |
 | SBS documentos de riesgo | `source("pe.sbs.documentos_riesgo")` | PDF con huella y evidencia por página; portada, concentración fechada, pasajes cualitativos y cobertura por documento |
 | SBS inventario de informes | `source("pe.sbs.informes_riesgo")` | Enlaces, códigos y versiones por entidad/clasificadora; documentos pendientes de descargar |
@@ -141,6 +142,7 @@ python -m compileall -q src scripts apps tools
 - [Documentos y evidencia de ratings](docs/sbs-documentos-riesgo.md)
 - [Anuncios regulatorios con evidencia](docs/sbs-anuncios-regulatorios.md)
 - [Resoluciones de fusión por absorción](docs/elperuano-fusiones.md)
+- [Retiros explícitos de clasificaciones](docs/retiros-clasificaciones.md)
 - [Migración desde las rutas anteriores](docs/migration.md)
 
 El histórico completo se ejecuta primero localmente. Este repositorio no

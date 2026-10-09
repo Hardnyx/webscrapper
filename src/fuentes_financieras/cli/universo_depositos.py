@@ -14,6 +14,8 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
+    'document_id': 'Identificador del comunicado', 'document_filename': 'Nombre del PDF fuente',
+    'withdrawal_scope': 'Clasificaciones o instrumentos retirados', 'withdrawal_reason': 'Motivo explícito del retiro',
     'norm_id': 'Identificador del dispositivo legal', 'resolution_date': 'Fecha de la resolución',
     'counterparty_name': 'Otra entidad mencionada en el artículo',
     'absorbing_entity_name': 'Entidad absorbente explícita', 'absorbed_entity_name': 'Entidad absorbida explícita',
