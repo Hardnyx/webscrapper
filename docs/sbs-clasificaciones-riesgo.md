@@ -28,6 +28,9 @@ python scripts/sync_clasificaciones_riesgo.py
 # Ambos datasets para períodos explícitos.
 python scripts/sync_clasificaciones_riesgo.py --datasets clasificaciones informes --periodos 202602 202601 --keep-raw
 
+# Comparaciones y símbolos de cambio publicados sobre el histórico validado.
+python scripts/sync_clasificaciones_riesgo.py --eventos --load-only
+
 # Solo el inventario dentro de un rango de cortes publicados.
 python scripts/sync_clasificaciones_riesgo.py --datasets informes --desde 2025-03 --hasta 2026-09
 
@@ -68,3 +71,25 @@ Ambos proveedores permiten filtros por tipo de entidad, entidad y clasificadora.
 El 9 de octubre de 2026 se validaron con el código del repositorio los 30 períodos del resumen publicados desde marzo de 2012 hasta septiembre de 2026: 4.215 clasificaciones con referencias completas y sin avisos de enlace o símbolo desconocido. Se comprobó la reutilización de caché del histórico.
 
 El inventario independiente se sincronizó para septiembre de 2025, marzo de 2026 y septiembre de 2026: 420 asociaciones, con exportación Excel y lectura sin red. Esta comprobación no certifica la disponibilidad de cada documento enlazado. Las pruebas cubren estructura ambigua, duplicados, período de enlace incorrecto, versiones, escala temporal, respuestas parciales, migración de esquema y conservación de capturas tras un fallo.
+
+## Cambios históricos y señales publicadas
+
+Desde la versión 0.17.0, `--eventos` añade las hojas `comparaciones` y `eventos` al reporte. Requiere el dataset `clasificaciones`. No crea otro proveedor ni sincroniza fuentes adicionales: consume expresamente las clasificaciones seleccionadas y validadas.
+
+La hoja de comparaciones conserva las observaciones originales y la referencia al corte anterior observado: código, clasificación, informe, URL fuente y fecha de extracción. Solo se compara texto cuando coinciden exactamente categoría, nombre publicado, clasificadora, código de clasificadora y tipo de clasificación, y los cortes son consecutivos. Los nombres no se unen por similitud, ni se interpretan conversiones o fusiones. Un salto de semestre se conserva como `gap_not_compared`; tampoco se convierte una entidad ausente en retiro de rating, intervención o revocación.
+
+La hoja de eventos diferencia:
+
+- `published_upgrade/published_downgrade`: símbolo de subida/bajada publicado por la SBS. Se conserva su URL, título y texto alternativo. Su referencia es la clasificación anterior según la fuente, **no necesariamente el corte anterior seleccionado**. Puede existir aunque la selección contenga un solo corte.
+- `observed_rating_change`: cambio literal entre cortes consecutivos sin dirección publicada. No se ordenan letras ni se convierten escalas entre clasificadoras para inferir mejora o deterioro.
+
+Texto igual no significa perspectiva estable ni ausencia de riesgo. Un símbolo ausente o desconocido no produce una subida/bajada inferida. Las observaciones con valores ausentes, nombres diferentes o cortes no consecutivos permanecen visibles sin comparación concluyente. Los códigos de los cortes no se convierten en fecha del evento o del comité.
+
+API de consumo sin descarga:
+
+```python
+from fuentes_financieras.eventos_riesgo import summary_changes
+observations, events = summary_changes(ratings.load())
+```
+
+Se validó la función y la CLI, sin red, sobre los 30 cortes íntegros del histórico: 4.215 observaciones, 127 señales de bajada y 109 de subida publicadas, 40 comparaciones omitidas por cortes no consecutivos. El reporte se verificó con tablas, filtros y encabezados en español. Esto es un registro reproducible de cambios observados; no envía notificaciones ni cubre intervenciones, fusiones, autorizaciones o retiros confirmados por otras fuentes.

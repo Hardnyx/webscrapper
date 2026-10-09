@@ -39,6 +39,8 @@ python scripts/sync_riesgo_cambiario.py --desde 2026-07
 python scripts/sync_riesgo_cambiario.py --datasets capital --desde 2026-08 --tipos C R
 python scripts/sync_clasificaciones_riesgo.py
 python scripts/sync_documentos_riesgo.py --periodos 202601 --entidad ALFIN
+# Cambios publicados y comparación conservadora del histórico local.
+python scripts/sync_clasificaciones_riesgo.py --eventos --load-only
 python scripts/sync_clasificaciones_riesgo.py --datasets clasificaciones informes --periodos 202602 202601
 python scripts/sync_universo_depositos.py
 python scripts/sync_referencias_tasas_pasivas.py --desde 2026-10-05 --hasta 2026-10-06

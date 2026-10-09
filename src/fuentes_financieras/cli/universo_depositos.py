@@ -14,6 +14,12 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
+    'previous_period_code': 'Código del corte anterior observado', 'previous_rating': 'Clasificación del corte anterior observado',
+    'previous_report_id': 'Identificador del informe anterior', 'previous_report_url': 'URL informe anterior',
+    'previous_source_url': 'URL fuente anterior', 'previous_retrieved_at': 'Fecha extracción anterior',
+    'comparison_status': 'Estado de comparación', 'event_type': 'Tipo de cambio', 'event_basis': 'Evidencia del cambio',
+    'previous_value': 'Valor del bloque anterior', 'current_value': 'Valor del bloque actual',
+    'previous_page_number': 'Página de evidencia anterior', 'previous_evidence_text': 'Texto de evidencia anterior',
     'top_depositors': 'Número de principales depositantes', 'observation_period': 'Mes observado',
     'topic': 'Tema', 'recognized_count': 'Cifras reconocidas', 'candidate_count': 'Pasajes candidatos',
     'coverage_status': 'Estado de cobertura', 'pages_checked': 'Páginas revisadas', 'text_pages': 'Páginas con texto',

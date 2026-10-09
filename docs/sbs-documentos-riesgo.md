@@ -79,7 +79,7 @@ El archivo se sustituye de forma atómica solo después de validarlo. La caché 
 
 ## Reporte y códigos de salida
 
-`outputs/documentos_riesgo/documentos_riesgo.xlsx` contiene las hojas `campos`, `referencias` y `cobertura` con tablas, filtros y encabezados en español. La asociación de entidad/clasificadora se incorpora mediante una unión explícita por `report_id`, sin afirmar que se haya verificado la identidad legal dentro del documento.
+`outputs/documentos_riesgo/documentos_riesgo.xlsx` contiene las hojas `campos`, `referencias`, `cobertura` y `comparaciones` con tablas, filtros y encabezados en español. La asociación de entidad/clasificadora se incorpora mediante una unión explícita por `report_id`, sin afirmar que se haya verificado la identidad legal dentro del documento.
 
 - **0:** documentos seleccionados íntegros y todos los campos emitidos extraídos del formato reconocido; no certifica extracción exhaustiva del documento.
 - **1:** descarga, inventario o caché incompletos/dañados; no se exporta un reporte nuevo.
@@ -92,3 +92,11 @@ El 9 de octubre de 2026 se comprobó el código del proveedor con ocho PDF reale
 La extracción produjo 113 registros: 45 campos reconocidos (incluidas tres cifras de concentración) y 68 pendientes de revisión (66 pasajes candidatos y dos fechas de comité). Para Alfin/JCR se reconocieron 9,7% y 13,2% de los depósitos en los 10 y 20 principales depositantes a diciembre de 2025, página 16. Para Banbif/Moodys se reconoció 22,30% para los 20 principales a diciembre de 2025, página 2, sin completar el denominador del pasaje. MicroRate produjo calificación crediticia y perspectiva para CMAC del Santa y CRAC Los Andes.
 
 Se comprobó la migración de los ocho PDF íntegros sin red, una segunda sincronización sin reprocesarlos y siete exportaciones desde caché. Las pruebas cubren porcentajes inválidos, fecha o denominador ausentes, comparativos no promovidos a cifra actual, negaciones en menciones de eventos, límites de candidatos, PDF incompletos, HTML, cifrado, OCR pendiente, versiones, corrupción de caché y conservación tras fallos. Esto no valida todo el histórico ni todas las entidades; la estructuración cualitativa y los eventos confirmados siguen pendientes.
+
+## Comparación de bloques del mismo documento
+
+Desde la versión 0.17.0, `comparaciones` conserva los valores de los bloques Actual/Anterior, con sus páginas y pasajes. Solo compara una pareja única reconocida del mismo campo, informe y huella PDF. Los campos pendientes de revisión, duplicados o sin pareja quedan explícitos; una perspectiva del informe no se propaga a los ratings de depósitos.
+
+Una diferencia produce `rating_text_change` o `outlook_change`, según el campo. No se asigna mejora/deterioro ordenando letras, ni una fecha de evento desde el código SBS. Se excluyen los pasajes cualitativos, las menciones de eventos sin confirmar y las fechas de comité ambiguas. La API independiente es `document_changes(fields)` en `fuentes_financieras.eventos_riesgo`.
+
+En los ocho PDF reales de validación se obtuvieron 27 comparaciones: tres cambios literales de rating, seis pares con texto igual y 18 campos sin bloque anterior reconocido. No se encontró un cambio de perspectiva en esa muestra; los cambios de perspectiva se verificaron mediante pruebas sintéticas, incluyendo pares ambiguos y perspectivas separadas por producto. Estos resultados no representan cobertura exhaustiva del histórico de informes.

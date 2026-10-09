@@ -80,7 +80,10 @@ def run(argv=None):
         coverage_frame['coverage_status']=coverage_frame.coverage_status.replace({'recognized':'Cifra reconocida',
             'needs_review':'Evidencia candidata; revisar', 'not_found_in_text':'No encontrado en el texto; no implica inexistencia', 'needs_ocr':'Requiere OCR'})
     if not coverage_frame.empty:coverage_frame['topic']=coverage_frame.topic.replace(topic_labels)
-    write_report(path,{'campos':report,'referencias':associations,'cobertura':coverage_frame})
+    from fuentes_financieras.eventos_riesgo import document_changes, display_changes
+    comparisons = document_changes(fields).merge(associations, on='report_id', how='left')
+    write_report(path,{'campos':report,'referencias':associations,'cobertura':coverage_frame,
+        'comparaciones':display_changes(comparisons)})
     print(f'Documentos: {len(expected)}; campos: {len(fields)}; pendientes de revisión/extracción: {pending}; reporte: {path}')
     return 0 if pending==0 else 2
 

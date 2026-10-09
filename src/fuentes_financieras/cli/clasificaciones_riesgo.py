@@ -12,6 +12,7 @@ DATASETS = {'clasificaciones': 'pe.sbs.clasificaciones_riesgo', 'informes': 'pe.
 
 def run(argv=None):
     parser = argparse.ArgumentParser(description='Clasificaciones institucionales e inventario de informes SBS.')
+    parser.add_argument('--eventos', action='store_true', help='Comparar cortes consecutivos y exportar cambios publicados.')
     parser.add_argument('--datasets', nargs='+', choices=list(DATASETS), default=['clasificaciones'])
     parser.add_argument('--periodos', nargs='+', help='Códigos SBS YYYY01 (marzo) / YYYY02 (septiembre).')
     parser.add_argument('--desde', help='YYYY-MM o YYYY-MM-DD')
@@ -23,6 +24,8 @@ def run(argv=None):
     parser.add_argument('--keep-raw', action='store_true')
     parser.add_argument('--no-second-sync', action='store_true')
     args = parser.parse_args(argv)
+    if args.eventos and 'clasificaciones' not in args.datasets:
+        parser.error('--eventos requiere el dataset clasificaciones.')
     if args.periodos and (args.desde or args.hasta):
         parser.error('Seleccione --periodos o un rango --desde/--hasta.')
     if args.load_only and args.force:
@@ -62,6 +65,11 @@ def run(argv=None):
         data = provider.load(**query)
         if not expected or data.empty or set(data.period_code.astype(str)) != expected:
             raise ValueError('La caché no contiene toda la selección validada bajo el contrato actual.')
+        if args.eventos and name == 'clasificaciones':
+            from fuentes_financieras.eventos_riesgo import summary_changes, display_changes
+            observations, events = summary_changes(data)
+            sheets['comparaciones'] = display_changes(observations)
+            sheets['eventos'] = display_changes(events)
         report = data.copy()
         if 'trend' in report:
             report['trend'] = report.trend.replace({'up': 'Subió', 'down': 'Bajó'})
