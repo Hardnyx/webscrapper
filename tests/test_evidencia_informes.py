@@ -8,6 +8,44 @@ from fuentes_financieras.providers.sbs.documentos_riesgo import extract_cover_fi
 JCR = ('Al cierre de diciembre de 2025 los 10 principales depositantes '
        'representaron el 9.7% del total de depósitos, mientras que los 20 '
        'principales concentraron el 13.2%. A junio representaron 14.7% y 17.7%.')
+MOODYS_YEAR_END = ('Cabe indicar que, a nivel de concentración de principales depositantes '
+                  'se evidencia un incremento en la concentración de los 20 principales '
+                  'depositantes al pasar a 22.30% al cierre de 2025, desde 20.72% '
+                  'al término de 2024.')
+
+
+def test_historical_jcr_bank_denominator_with_pdf_spacing():
+    text = JCR.replace('diciembre', 'junio').replace('del total de depósitos,', 'del total de depósitos d el Banco,')
+    fields = concentration_fields(text, agency_code='001196')
+    assert len(fields) == 2
+    assert all(f['observation_period'] == '2025-06' and f['denominator_basis'] == 'total_deposits' for f in fields)
+    assert not concentration_fields(text.replace('del total de depósitos d el Banco', 'del total de créditos'), agency_code='001196')
+
+
+def test_moodys_year_end_preserves_two_explicit_observations():
+    fields = concentration_fields(MOODYS_YEAR_END, agency_code='000406')
+    assert [(f['observation_period'], f['normalized_value']) for f in fields] == [('2025-12', '22.3'), ('2024-12', '20.72')]
+    assert all(f['top_depositors'] == 20 and f['denominator_basis'] == 'unspecified_in_excerpt'
+               and f['evidence_text'] == MOODYS_YEAR_END for f in fields)
+    assert not concentration_fields(MOODYS_YEAR_END, agency_code='001196')
+
+
+@pytest.mark.parametrize('old,new', [
+    ('se evidencia', 'no se evidencia'), ('se evidencia', 'se podría evidenciar'),
+    ('al cierre de 2025', 'a junio de 2025'), ('al término de 2024', 'anteriormente'),
+    ('2024.', '2025.'), ('2024.', '2026.'), ('22.30', '1,2.3'),
+])
+def test_annual_comparison_rejects_unsupported_or_ambiguous_context(old, new):
+    fields = concentration_fields(MOODYS_YEAR_END.replace(old, new), agency_code='000406')
+    assert all(f['normalized_value'] != '22.3' for f in fields)
+
+
+def test_undated_microrate_percent_remains_reviewable():
+    fields, coverage = extract_body_evidence([
+        'La concentración de los 20 principales depositantes se considera manejable (8.3% del total de depósitos).'
+    ], agency_code='000410')
+    assert not any(f['field_kind'] == 'deposit_concentration' for f in fields)
+    assert next(c for c in coverage if c['topic'] == 'deposit_concentration')['coverage_status'] == 'needs_review'
 
 
 def test_dated_concentration_excludes_other_comparisons():

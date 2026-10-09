@@ -14,11 +14,11 @@ MONTHS['setiembre']=9
 
 
 def concentration_fields(text, *, agency_code):
-    """Extract only the two tested dated sentences, retaining denominator limits."""
+    """Extract tested dated sentences, retaining denominator and date limits."""
     found=[]
     patterns=[]
     if agency_code=='001196':
-        patterns=[(r'al cierre de ([a-z]+) de (\d{4}),? los (\d+) principales depositantes representaron el ([\d.,]+)% del total de depósitos, mientras que los (\d+) principales concentraron el ([\d.,]+)%', 'total_deposits')]
+        patterns=[(r'al cierre de ([a-z]+) de (\d{4}),? los (\d+) principales depositantes representaron el ([\d.,]+)% del total de depósitos(?: d\s*el Banco)?, mientras que los (\d+) principales concentraron el ([\d.,]+)%', 'total_deposits')]
     elif agency_code=='000406':
         patterns=[(r'concentración de depositantes \(([\d.,]+)% los (\d+) principales a ([a-z]+) de (\d{4})\)', 'unspecified_in_excerpt')]
     for pattern,basis in patterns:
@@ -35,6 +35,26 @@ def concentration_fields(text, *, agency_code):
                     value_raw=raw+'%',normalized_value=str(value),unit='percent',top_depositors=int(n),
                     observation_period=f'{year}-{MONTHS[month.lower()]:02d}',denominator_basis=basis,
                     temporal_role='dated_observation',extraction_status='extracted',evidence_text=match[0]))
+    if agency_code == '000406':
+        pattern = (r'Cabe indicar que, a nivel de concentración de principales depositantes '
+                   r'se evidencia un incremento en la concentración de los (\d+) principales '
+                   r'depositantes al pasar a ([\d.,]+)% al cierre de (\d{4}), '
+                   r'desde ([\d.,]+)% al término de (\d{4})\.')
+        for match in re.finditer(pattern, text, re.I):
+            n, current, year, previous, previous_year = match.groups()
+            if not 1 <= int(n) <= 1000 or not 1900 <= int(previous_year) < int(year) <= 2100:
+                continue
+            # Year-end observations explicitly mean December; no document date is borrowed.
+            for raw, observed_year in ((current, year), (previous, previous_year)):
+                if not re.fullmatch(r'\d+(?:[.,]\d+)?', raw):
+                    continue
+                value = float(raw.replace(',', '.'))
+                if not 0 <= value <= 100:
+                    continue
+                found.append(dict(field_kind='deposit_concentration', field_label='Principales depositantes',
+                    value_raw=raw+'%', normalized_value=str(value), unit='percent', top_depositors=int(n),
+                    observation_period=f'{observed_year}-12', denominator_basis='unspecified_in_excerpt',
+                    temporal_role='dated_observation', extraction_status='extracted', evidence_text=match[0]))
     return found
 
 
