@@ -17,6 +17,18 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.moodys.indice_comunicados": DatasetSpec(
+        dataset_id="pe.moodys.indice_comunicados", provider_class="fuentes_financieras.providers.clasificadoras.indice_comunicados:ActionIndexProvider",
+        title="Moody’s Local Perú - Índice de acciones", country="PE", organization="Moody’s Local Perú", frequency="snapshot",
+        storage_path="peru/moodys/indice_comunicados", network_transport="curl_cffi/chrome + HTML",
+        notes="Registros del HTML entregado; no confirma eventos ni acredita archivo completo.",
+    ),
+    "pe.moodys.referencias_comunicados": DatasetSpec(
+        dataset_id="pe.moodys.referencias_comunicados", provider_class="fuentes_financieras.providers.clasificadoras.indice_comunicados:ActionReferencesProvider",
+        title="Moody’s Local Perú - Referencias PDF de acciones", country="PE", organization="Moody’s Local Perú", frequency="snapshot",
+        storage_path="peru/moodys/referencias_comunicados", network_transport="curl_cffi/chrome + HTML",
+        notes="Acciones explícitas, identidad, fecha y enlace de descarga; no descarga PDF ni confirma retiros.",
+    ),
     "pe.clasificadoras.retiros": DatasetSpec(
         dataset_id="pe.clasificadoras.retiros",
         provider_class="fuentes_financieras.providers.clasificadoras.retiros_clasificaciones:RatingWithdrawalsProvider",

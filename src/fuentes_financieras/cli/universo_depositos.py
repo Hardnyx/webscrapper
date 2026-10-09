@@ -14,6 +14,8 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
+    'action_id': 'Identificador de acción', 'canonical_article_url': 'URL canónica de acción',
+    'pdf_url': 'URL del comunicado PDF',
     'document_id': 'Identificador del comunicado', 'document_filename': 'Nombre del PDF fuente',
     'withdrawal_scope': 'Clasificaciones o instrumentos retirados', 'withdrawal_reason': 'Motivo explícito del retiro',
     'norm_id': 'Identificador del dispositivo legal', 'resolution_date': 'Fecha de la resolución',

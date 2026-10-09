@@ -64,4 +64,22 @@ Formatos contrastados con los PDF oficiales:
 Las pruebas cubren alcance parcial, negaciones, hipótesis, texto histórico, ambigüedad, fechas inválidas, URL incorrecta, PDF corrupto, página sin texto, caché, reproceso sin descarga, redescarga, recuperación de PDF dañado y exportación sin red. Los PDF y reportes de validación permanecen fuera del repositorio.
 La sincronización real mediante el lanzador del repositorio descargó cuatro PDF: tres retiros reconocidos y la ratificación sin evento de retiro. Se comprobaron la reutilización de las cuatro capturas, el reproceso forzado sin acceso a red y el reporte sin red con cuatro comunicados y tres retiros. Se verificaron las tablas, filtros, congelación y ausencia de cambios de ancho.
 
-Quedan pendientes otros formatos de estas agencias, comunicados PCR, JCR y MicroRate, descubrimiento paginado de comunicados, otros instrumentos, extracción de motivos de páginas posteriores y envío de alertas. El comunicado corporativo de Apoyo & Asociados sobre Telefónica de diciembre de 2025 utiliza otro formato y no se marca como retiro reconocido por este parser. La cobertura no es exhaustiva.
+Quedan pendientes otros formatos de estas agencias, comunicados PCR, JCR y MicroRate, descubrimiento de comunicados de otras clasificadoras, otros instrumentos, extracción de motivos de páginas posteriores y envío de alertas. El comunicado corporativo de Apoyo & Asociados sobre Telefónica de diciembre de 2025 utiliza otro formato y no se marca como retiro reconocido por este parser. La cobertura no es exhaustiva.
+
+## Descubrimiento de Moody’s Local Perú (versión 0.22.0)
+
+```bash
+python scripts/sync_retiros_clasificaciones.py --descubrir --desde 2026-07-30 --hasta 2026-07-30 --palabras Qapaq
+```
+
+`pe.moodys.indice_comunicados` captura la tabla publicada, con fecha, título y enlace. La tabla HTML observada entrega 829 registros; la paginación visible opera sobre esos registros. La captura certifica únicamente las filas entregadas, sin afirmar que sean todo el archivo histórico. Una tabla vacía, incompleta o con referencias duplicadas se rechaza.
+
+`pe.moodys.referencias_comunicados` recibe acciones explícitas y verifica identidad canónica, identificador numérico cuando corresponde, título, fecha y un único enlace Download al PDF oficial. No descarga documentos. El proveedor de retiros sigue siendo independiente. La CLI consume expresamente los tres proveedores y comprueba que título y fecha coincidan entre índice y página antes de descargar los PDF.
+
+`--desde` y `--hasta` filtran fechas del índice, inclusive; no sustituyen la fecha del comunicado PDF. `--palabras` selecciona subcadenas literales del título con coincidencia de cualquiera de ellas, sin distinguir mayúsculas. Por defecto busca `retira`: el título selecciona candidatos, pero no confirma retiros. Para seleccionar una entidad se utiliza su nombre publicado, sin resolución automática de aliases. No se elimina ninguna fila por su posición cronológica.
+
+`--solo-indice` exporta índice, selección y cobertura sin consultar páginas de acciones ni PDF. Una selección vacía también exporta esa cobertura sin afirmar ausencia de eventos. `--max-comunicados` limita la selección que se resolverá, por defecto a 20; si se supera, se exige acotar los filtros y no se procesa un subconjunto silencioso. `--load-only` permite repetir toda la selección sin red si las tres capturas están presentes y validadas. `--force` recaptura índice y referencias y reprocesa PDF verificado; `--redownload` vuelve a descargar los PDF seleccionados.
+
+La exportación completa añade `indice`, `seleccion`, `cobertura_indice` y `referencias` a las hojas de comunicados y retiros. Una contradicción de identidad, título o fecha, un enlace ambiguo o una captura faltante impide generar un reporte nuevo. Las capturas HTML conservan hash y la versión válida más reciente, con actualización predeterminada a las 24 horas.
+
+La validación real seleccionó el comunicado de Qapaq del 30 de julio de 2026 desde 829 registros, resolvió su enlace numérico a la página canónica, descargó el PDF y reconoció el retiro. La misma selección se exportó sin red. Las capturas y reportes permanecen fuera del repositorio. El descubrimiento de otras clasificadoras y formatos de enlace continúa pendiente.
