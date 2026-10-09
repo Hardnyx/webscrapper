@@ -17,6 +17,14 @@ class DatasetSpec:
 
 
 CATALOG: dict[str, DatasetSpec] = {
+    "pe.sbs.informes_riesgo": DatasetSpec(
+        dataset_id="pe.sbs.informes_riesgo",
+        provider_class="fuentes_financieras.providers.sbs.informes_riesgo:RiskReportInventoryProvider",
+        title="SBS - Inventario de informes de clasificación",
+        country="PE", organization="SBS", frequency="semiannual",
+        storage_path="peru/sbs/informes_riesgo", network_transport="curl_cffi/chrome + ASP.NET WebForms",
+        notes="Enlaces y versiones publicados; no descarga documentos ni infiere su fecha o ratings de depósitos.",
+    ),
     "pe.sbs.posicion_cambiaria": DatasetSpec(
         dataset_id="pe.sbs.posicion_cambiaria",
         provider_class="fuentes_financieras.providers.sbs.riesgo_cambiario:ForeignExchangePositionProvider",

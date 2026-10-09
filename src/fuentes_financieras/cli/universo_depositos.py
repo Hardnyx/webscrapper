@@ -14,6 +14,17 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
+    'period_code': 'Código período SBS', 'year': 'Año', 'semester': 'Semestre',
+    'rating_agency': 'Clasificadora', 'rating': 'Clasificación publicada',
+    'summary_rating': 'Clasificación del resumen', 'rating_kind': 'Tipo de clasificación',
+    'trend': 'Cambio publicado', 'trend_basis': 'Base del cambio',
+    'source_change_icon_url': 'URL símbolo de cambio', 'source_change_title': 'Texto del cambio',
+    'source_change_alt': 'Texto alternativo del símbolo',
+    'report_url': 'URL informe', 'report_agency_code': 'Código clasificadora SBS',
+    'report_period_code': 'Código período del informe', 'report_file_number': 'Número de archivo SBS',
+    'report_version': 'Versión del informe', 'report_id': 'Identificador del informe',
+    'document_status': 'Estado del documento', 'report_date': 'Fecha del informe',
+
     'denominator_period': 'Mes del denominador', 'denominator_date': 'Fecha del denominador',
     'ranking_product': 'Producto del ranking', 'published_rank': 'Posición publicada',
     'comparison_scope': 'Universo de comparación',

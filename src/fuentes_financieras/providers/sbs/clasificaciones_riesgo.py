@@ -40,11 +40,6 @@ BUTTON_VALUE = "Consultar"
 SCRIPT_MANAGER_VALUE = "ctl00$ScriptManager|ctl00$MainContent$BtnConsultar"
 
 
-_HIDDEN_RE = re.compile(
-    r"\|(\d+)\|hiddenField\|([^|]+)\|([^|]*)"
-)
-
-
 def _parse_date(value) -> date:
     if isinstance(value, datetime):
         return value.date()
@@ -90,41 +85,40 @@ def _period_code_from_value(value) -> str:
 
 
 def _parse_delta_response(text: str) -> tuple[str, dict[str, str]]:
-    marker = "|updatePanel|"
-    pos = text.find(marker)
-    if pos < 0:
-        raise SourceUnavailableError(
-            "La respuesta SBS no contiene updatePanel ASP.NET."
-        )
-
-    panel_name_end = text.find("|", pos + len(marker))
-    if panel_name_end < 0:
-        raise SourceUnavailableError("Respuesta ASP.NET delta malformada.")
-
-    content_start = panel_name_end + 1
-
-    boundary = re.search(
-        r"\|\d+\|hiddenField\|__EVENTTARGET\|",
-        text[content_start:],
-    )
-    if boundary is None:
-        boundary = re.search(
-            r"\|\d+\|hiddenField\|__VIEWSTATE\|",
-            text[content_start:],
-        )
-    if boundary is None:
-        raise SourceUnavailableError(
-            "No se encontró el límite del updatePanel ASP.NET."
-        )
-
-    content_end = content_start + boundary.start()
-    fragment = text[content_start:content_end]
-
-    hidden: dict[str, str] = {}
-    for match in _HIDDEN_RE.finditer(text[content_end:]):
-        hidden[match.group(2)] = match.group(3)
-
-    return fragment, hidden
+    # ASP.NET lengths count UTF-16 code units, including literal pipes in content.
+    raw = text.encode('utf-16-le'); cursor = 0; panels = []; hidden = {}
+    delimiter = b'|\x00'
+    def token():
+        nonlocal cursor
+        end = cursor
+        while end < len(raw) and raw[end:end+2] != delimiter:
+            end += 2
+        if end >= len(raw):
+            raise SourceUnavailableError('Respuesta ASP.NET delta truncada.')
+        value = raw[cursor:end].decode('utf-16-le'); cursor = end+2
+        return value
+    while cursor < len(raw):
+        length = token()
+        if not length.isdigit():
+            raise SourceUnavailableError('Longitud ASP.NET delta inválida.')
+        kind, identifier = token(), token()
+        end = cursor+int(length)*2
+        if end > len(raw) or raw[end:end+2] != delimiter:
+            raise SourceUnavailableError('Contenido ASP.NET delta truncado o longitud incorrecta.')
+        content = raw[cursor:end].decode('utf-16-le'); cursor = end+2
+        if kind in ('error', 'pageRedirect'):
+            raise SourceUnavailableError('SBS devolvió error o redirección ASP.NET.')
+        if kind == 'updatePanel':
+            if identifier != 'ctl00_MainContent_UpTblResumen':
+                raise SourceUnavailableError('Panel de clasificaciones SBS cambiado.')
+            panels.append(content)
+        elif kind == 'hiddenField':
+            if identifier in hidden:
+                raise SourceUnavailableError('Estado ASP.NET delta duplicado.')
+            hidden[identifier] = content
+    if len(panels) != 1:
+        raise SourceUnavailableError('Panel de clasificaciones SBS ausente o duplicado.')
+    return panels[0], hidden
 
 
 def _merge_hidden_state(
@@ -265,8 +259,10 @@ class RiskRatingsClient:
 
 
 class RiskRatingsProvider(DatasetProvider):
-    parser_version = "2026-10-06.2"
-    contract_version = "2"
+    parser_version = "2026-10-09.2"
+    contract_version = "3"
+
+    parse_summary = staticmethod(to_long_form)
 
     def __init__(self, spec):
         super().__init__(spec)
@@ -396,7 +392,7 @@ class RiskRatingsProvider(DatasetProvider):
 
         retrieved_at = utc_now_iso()
 
-        data = to_long_form(
+        data = self.parse_summary(
             html,
             period_code=code,
             type_code_by_label=self.client.type_code_by_label,

@@ -22,33 +22,34 @@ def test_accounting_compatibility_and_parser():
 
 
 def test_ratings_reports_use_selected_output_directory(tmp_path, monkeypatch):
-    import fuentes_financieras
     period = {'period_code': '202601', 'label': 'Marzo 2026', 'period_date': '2026-03-31', 'selected': True}
     frame = pd.DataFrame([{
         'period_code': '202601', 'period': '2026-03', 'period_date': '2026-03-31',
         'entity_type_code': 'S', 'entity_type': 'Seguros', 'entity_name': 'Entidad',
         'rating_agency': 'Agencia', 'rating': 'A', 'trend': None,
+        'rating_kind': 'institutional_summary', 'trend_basis': 'published_change_vs_previous_classification',
+        'data_quality_flags': '',
     }])
 
     class CachedRatings:
         contract_version = '2'
         storage = SimpleNamespace(manifest=SimpleNamespace(last_schema_contract_version='2', last_schema_hash=None))
 
-        def available_periods(self):
-            return [period]
+        def plan_sync(self, **kwargs):
+            return [SimpleNamespace(period_key=period['period_code'])]
 
         def sync(self, **kwargs):
             return SyncResult('pe.sbs.clasificaciones_riesgo', requested=1, skipped_existing=1)
 
-        def load(self):
+        def load(self, **kwargs):
             return frame.copy()
 
-    monkeypatch.setattr(fuentes_financieras, 'source', lambda _: CachedRatings())
+    monkeypatch.setattr(clasificaciones_riesgo, 'source', lambda _: CachedRatings())
     monkeypatch.chdir(tmp_path)
     output = tmp_path / 'reports'
     assert clasificaciones_riesgo.main(['--data-root', str(tmp_path / 'data'), '--output-dir', str(output)]) == 0
-    assert (output / 'resultado_historico_clasificaciones.json').is_file()
-    assert (output / 'resumen_historico_clasificaciones.csv').is_file()
+    assert (output / 'clasificaciones_informes.xlsx').is_file()
+    assert not (output / 'resumen_historico_clasificaciones.csv').exists()
     assert not (tmp_path / 'resultado_historico_clasificaciones.json').exists()
 
 

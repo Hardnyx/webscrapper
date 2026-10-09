@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import re
 from datetime import date
+from urllib.parse import urljoin, urlsplit, parse_qs
+
+from fuentes_financieras.exceptions import SchemaChangedError
 
 import pandas as pd
 from bs4 import BeautifulSoup, FeatureNotFound
@@ -113,26 +116,51 @@ def _result_table(html: str):
     if not candidates:
         raise ValueError("No se encontró la tabla exterior de clasificaciones.")
 
-    candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
+    if len(candidates) != 1:
+        raise SchemaChangedError('Tabla exterior de clasificaciones ambigua.')
     return candidates[0][2]
 
 
-def _trend(cell) -> str | None:
-    img = cell.find("img")
-    if img is None:
-        return None
+def _trend(cell, source_url):
+    images = cell.find_all('img')
+    if not images:
+        return None, '', '', '', ''
+    if len(images) != 1:
+        raise SchemaChangedError('Múltiples símbolos de cambio en una clasificación.')
+    img = images[0]
+    title, alt, src = (str(img.get(k) or '').strip() for k in ('title', 'alt', 'src'))
+    filename = urlsplit(src).path.rsplit('/', 1)[-1].casefold()
+    known = {'subio.png': ('up', 'Subió en relación a la clasificación anterior'),
+             'bajo.png': ('down', 'Bajó en relación a la clasificación anterior')}
+    trend = None
+    flag = 'source_change_symbol_unrecognized'
+    if filename in known:
+        trend, expected = known[filename]
+        if title and title != expected:
+            raise SchemaChangedError('Símbolo y texto de cambio contradictorios.')
+        flag = ''
+    return trend, urljoin(source_url, src) if src else '', title, alt, flag
 
-    text = " ".join([
-        str(img.get("title") or ""),
-        str(img.get("alt") or ""),
-        str(img.get("src") or ""),
-    ]).lower()
 
-    if any(token in text for token in ("sub", "mejor", "up")):
-        return "up"
-    if any(token in text for token in ("baj", "deterior", "down")):
-        return "down"
-    return None
+def report_reference(href, period_code, source_url):
+    if not href:
+        return dict(report_url='', report_agency_code='', report_period_code='',
+                    report_file_number='', report_version='', report_id=''), 'source_report_link_missing'
+    url = urljoin(source_url, href)
+    parts = urlsplit(url)
+    if (parts.scheme != 'https' or parts.netloc != 'extranet.sbs.gob.pe'
+            or parts.path != '/iece/descargar' or parts.fragment):
+        raise SchemaChangedError('Destino del informe SBS no reconocido.')
+    params = parse_qs(parts.query, keep_blank_values=True)
+    keys = ('codClasificadora', 'codPeriodo', 'numArchivo', 'numVersion')
+    if set(params) != set(keys) or any(len(params[k]) != 1 or not re.fullmatch(r'\d+', params[k][0]) for k in keys):
+        raise SchemaChangedError('Identificadores de informe SBS inválidos o ambiguos.')
+    agency, period, number, version = (params[k][0] for k in keys)
+    if period != period_code or any(int(v) <= 0 for v in (agency, number, version)):
+        raise SchemaChangedError('Informe de otro período o identificador no positivo.')
+    return dict(report_url=url, report_agency_code=agency, report_period_code=period,
+                report_file_number=number, report_version=version,
+                report_id=':'.join((agency, period, number, version))), ''
 
 
 def to_long_form(
@@ -150,6 +178,8 @@ def to_long_form(
 
     header_cells = rows[0].find_all(["th", "td"], recursive=False)
     headers = [c.get_text(" ", strip=True) for c in header_cells]
+    if headers[:2] != ['Tipo de Entidad', 'Entidad'] or any(not h for h in headers[2:]) or len(set(headers[2:])) != len(headers[2:]):
+        raise SchemaChangedError('Encabezado de clasificadoras cambiado o duplicado.')
     agencies = headers[2:]
 
     year, semester, month, period = period_parts(period_code)
@@ -159,13 +189,15 @@ def to_long_form(
 
     for tr in rows[1:]:
         cells = tr.find_all(["td", "th"], recursive=False)
-        if len(cells) < len(headers) or len(cells) < 2:
+        if len(cells) == 1 and cells[0].get('colspan') == str(len(headers)) and not cells[0].get_text(strip=True) and not cells[0].find(['a', 'img']):
             continue
+        if len(cells) != len(headers):
+            raise SchemaChangedError('Fila de clasificaciones incompleta o con columnas nuevas.')
 
         entity_type = cells[0].get_text(" ", strip=True)
         entity_name = cells[1].get_text(" ", strip=True)
         if not entity_type or not entity_name:
-            continue
+            raise SchemaChangedError('Clasificación sin tipo de entidad o nombre.')
 
         entity_type_code = type_code_by_label.get(entity_type)
 
@@ -174,13 +206,20 @@ def to_long_form(
                 break
 
             cell = cells[idx]
-            link = cell.find("a")
-            if link is None:
+            links = cell.find_all('a')
+            if not links:
+                if cell.get_text(strip=True) or cell.find('img'):
+                    raise SchemaChangedError('Contenido de clasificación sin enlace reconocible.')
                 continue
+            if len(links) != 1:
+                raise SchemaChangedError('Múltiples clasificaciones en una misma celda.')
+            link = links[0]
 
             rating = link.get_text(" ", strip=True).replace("\xa0", " ").strip()
             if not rating:
-                continue
+                raise SchemaChangedError('Enlace de clasificación sin texto.')
+            reference, report_flag = report_reference(link.get('href'), str(period_code), source_url)
+            trend, icon_url, icon_title, icon_alt, trend_flag = _trend(cell, source_url)
 
             records.append({
                 "period_code": str(period_code),
@@ -193,7 +232,14 @@ def to_long_form(
                 "entity_name": entity_name,
                 "rating_agency": str(agency).strip(),
                 "rating": rating,
-                "trend": _trend(cell),
+                "trend": trend,
+                "rating_kind": "institutional_summary",
+                "trend_basis": "published_change_vs_previous_classification",
+                "source_change_icon_url": icon_url,
+                "source_change_title": icon_title,
+                "source_change_alt": icon_alt,
+                "data_quality_flags": ';'.join(filter(None, (report_flag, trend_flag))),
+                **reference,
                 "source": "SBS",
                 "source_url": source_url,
                 "retrieved_at": retrieved_at,
@@ -211,6 +257,18 @@ def to_long_form(
         "rating_agency",
         "rating",
         "trend",
+        'rating_kind',
+        'trend_basis',
+        'source_change_icon_url',
+        'source_change_title',
+        'source_change_alt',
+        'data_quality_flags',
+        'report_url',
+        'report_agency_code',
+        'report_period_code',
+        'report_file_number',
+        'report_version',
+        'report_id',
         "source",
         "source_url",
         "retrieved_at",
@@ -233,6 +291,18 @@ def to_long_form(
         "rating_agency",
         "rating",
         "trend",
+        'rating_kind',
+        'trend_basis',
+        'source_change_icon_url',
+        'source_change_title',
+        'source_change_alt',
+        'data_quality_flags',
+        'report_url',
+        'report_agency_code',
+        'report_period_code',
+        'report_file_number',
+        'report_version',
+        'report_id',
         "source",
         "source_url",
         "retrieved_at",
@@ -255,7 +325,8 @@ def to_long_form(
         "entity_name",
         "rating_agency",
     ]
-    df = df.drop_duplicates(subset=key, keep="first")
+    if df.duplicated(subset=key).any():
+        raise SchemaChangedError('Clasificaciones duplicadas para período, entidad y clasificadora.')
 
     return df.sort_values(
         ["period_code", "entity_type", "entity_name", "rating_agency"],

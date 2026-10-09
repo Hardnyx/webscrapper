@@ -1,322 +1,91 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Download and validate the complete SBS historical ratings dataset.
-
-Usage:
-    python -m fuentes_financieras.cli.clasificaciones_riesgo
-
-Options:
-    --data-root PATH
-        Storage root for manifest and Parquet files.
-
-    --force
-        Re-query every published period.
-
-    --keep-raw
-        Keep compressed raw HTML/delta responses for auditing.
-
-    --no-second-sync
-        Skip the second cache-validation sync.
-
-Normal execution:
-1. uses dependencies declared by the installed package;
-2. discovers every period currently published by SBS;
-3. downloads every missing historical period;
-4. repeats sync and validates downloaded=0;
-5. loads the complete local history;
-6. writes CSV and JSON validation summaries.
-"""
-
-from __future__ import annotations
-
+"""Sync independent ratings and report inventories; export verified selections."""
 import argparse
-import json
 import os
-import sys
-import traceback
-from datetime import datetime
 from pathlib import Path
 
+from fuentes_financieras import source
+from fuentes_financieras.registry import get_provider
+from .universo_depositos import write_report
 
-def section(title: str):
-    print("\n" + "=" * 112)
-    print(title)
-    print("=" * 112)
-
-
-def compact_sync(result):
-    return {
-        "requested": result.requested,
-        "downloaded": result.downloaded,
-        "unchanged": result.unchanged,
-        "skipped_existing": result.skipped_existing,
-        "unavailable": result.unavailable,
-        "failed": result.failed,
-        "canonical_root": str(result.canonical_root) if result.canonical_root else None,
-        "details": result.details,
-    }
+DATASETS = {'clasificaciones': 'pe.sbs.clasificaciones_riesgo', 'informes': 'pe.sbs.informes_riesgo'}
 
 
 def run(argv=None):
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--data-root", default=None)
-    parser.add_argument("--force", action="store_true")
-    parser.add_argument("--keep-raw", action="store_true")
-    parser.add_argument("--no-second-sync", action="store_true")
-    parser.add_argument("--output-dir", type=Path, default=Path.cwd() / "outputs" / "clasificaciones_riesgo")
+    parser = argparse.ArgumentParser(description='Clasificaciones institucionales e inventario de informes SBS.')
+    parser.add_argument('--datasets', nargs='+', choices=list(DATASETS), default=['clasificaciones'])
+    parser.add_argument('--periodos', nargs='+', help='Códigos SBS YYYY01 (marzo) / YYYY02 (septiembre).')
+    parser.add_argument('--desde', help='YYYY-MM o YYYY-MM-DD')
+    parser.add_argument('--hasta', help='YYYY-MM o YYYY-MM-DD')
+    parser.add_argument('--data-root', type=Path)
+    parser.add_argument('--output-dir', type=Path, default=Path('outputs/clasificaciones_riesgo'))
+    parser.add_argument('--load-only', action='store_true')
+    parser.add_argument('--force', action='store_true')
+    parser.add_argument('--keep-raw', action='store_true')
+    parser.add_argument('--no-second-sync', action='store_true')
     args = parser.parse_args(argv)
-
-    from fuentes_financieras.runtime import resolve_data_root
-    data_root = resolve_data_root(args.data_root)
-    data_root.mkdir(parents=True, exist_ok=True)
-    os.environ["FINANCIAL_SOURCES_DATA_ROOT"] = str(data_root)
-    output_dir = args.output_dir.expanduser().resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
-    from fuentes_financieras.registry import get_provider
+    if args.periodos and (args.desde or args.hasta):
+        parser.error('Seleccione --periodos o un rango --desde/--hasta.')
+    if args.load_only and args.force:
+        parser.error('--load-only no se combina con --force.')
+    if args.data_root:
+        os.environ['FINANCIAL_SOURCES_DATA_ROOT'] = str(args.data_root.resolve())
     get_provider.cache_clear()
-
-    from fuentes_financieras import source
-
-    ratings = source("pe.sbs.clasificaciones_riesgo")
-
-    # v2 migrates safely from a partial v1 run. Existing v1 periods are
-    # re-fetched under contract v2 and upserted in place; the user does not
-    # need to delete datos_historico manually.
-    manifest_contract = (
-        ratings.storage.manifest.last_schema_contract_version
-    )
-    if manifest_contract not in (None, str(ratings.contract_version)):
-        print(
-            "\n[migración] Se detectó un esquema de contrato anterior "
-            f"({manifest_contract}). Se migrará automáticamente a "
-            f"contract_version={ratings.contract_version}."
-        )
-    elif (
-        ratings.storage.manifest.last_schema_hash
-        and manifest_contract is None
-    ):
-        print(
-            "\n[migración] Se detectó un manifest v1 parcial sin versión "
-            "de contrato de esquema. Se migrará automáticamente."
-        )
-
-    report = {
-        "started_at": datetime.now().isoformat(timespec="seconds"),
-        "python": sys.version,
-        "executable": sys.executable,
-        "data_root": str(data_root),
-        "dataset_id": "pe.sbs.clasificaciones_riesgo",
-        "tests": {},
-        "overall_ok": False,
-    }
-
-    section("1. CATÁLOGO DE PERÍODOS SBS")
-    periods = ratings.available_periods()
-    if not periods:
-        raise RuntimeError("SBS no devolvió períodos disponibles.")
-
-    for item in periods:
-        print(
-            f"{item['period_code']} | {item['label']:<22} | "
-            f"fecha={item['period_date']} | selected={item['selected']}"
-        )
-
-    print("\nPeríodos disponibles:", len(periods))
-    print("Más reciente        :", periods[0]["period_code"], periods[0]["label"])
-    print("Más antiguo         :", periods[-1]["period_code"], periods[-1]["label"])
-
-    report["period_catalog"] = periods
-
-    section("2. PRIMER SYNC — TODO EL HISTÓRICO")
-    first = ratings.sync(
-        force=args.force,
-        refresh_hours=24,
-        keep_raw=args.keep_raw,
-    )
-
-    print(
-        f"requested={first.requested} | downloaded={first.downloaded} | "
-        f"unchanged={first.unchanged} | skipped={first.skipped_existing} | "
-        f"unavailable={first.unavailable} | failed={first.failed}"
-    )
-
-    for detail in first.details:
-        print(
-            f"{detail.get('period_key', ''):<8} | "
-            f"{detail.get('status', ''):<20} | "
-            f"rows={detail.get('rows', '')}"
-        )
-
-    report["tests"]["first_sync"] = {
-        "ok": first.failed == 0 and first.unavailable == 0,
-        **compact_sync(first),
-    }
-
-    if first.failed or first.unavailable:
-        raise RuntimeError(
-            f"Primer sync incompleto: failed={first.failed}, unavailable={first.unavailable}"
-        )
-
-    if not args.no_second_sync:
-        section("3. SEGUNDO SYNC IDÉNTICO — VALIDACIÓN DE CACHÉ")
-        second = ratings.sync(
-            refresh_hours=24,
-            keep_raw=args.keep_raw,
-        )
-
-        print(
-            f"requested={second.requested} | downloaded={second.downloaded} | "
-            f"unchanged={second.unchanged} | skipped={second.skipped_existing} | "
-            f"unavailable={second.unavailable} | failed={second.failed}"
-        )
-
-        cache_ok = (
-            second.downloaded == 0
-            and second.failed == 0
-            and second.unavailable == 0
-            and second.skipped_existing == second.requested
-        )
-
-        print("\n¿SEGUNDO SYNC SIN REDESCARGAR PERÍODOS? ->", cache_ok)
-
-        report["tests"]["second_sync_cache"] = {
-            "ok": cache_ok,
-            **compact_sync(second),
-        }
-
-        if not cache_ok:
-            raise RuntimeError("La segunda sincronización no quedó completamente en caché.")
-
-    section("4. LOAD() — HISTÓRICO LOCAL COMPLETO")
-    df = ratings.load()
-
-    if df.empty:
-        raise RuntimeError("load() devolvió un DataFrame vacío.")
-
-    print("Filas             :", len(df))
-    print("Períodos          :", df["period_code"].nunique())
-    print("Entidades únicas  :", df[["entity_type", "entity_name"]].drop_duplicates().shape[0])
-    print("Clasificadoras    :", df["rating_agency"].nunique())
-    print("Desde             :", df["period_date"].min())
-    print("Hasta             :", df["period_date"].max())
-
-    actual_periods = sorted(df["period_code"].astype(str).unique().tolist())
-    expected_periods = sorted(x["period_code"] for x in periods)
-    period_coverage_ok = actual_periods == expected_periods
-
-    duplicates = int(
-        df.duplicated(
-            subset=[
-                "period_code",
-                "entity_type",
-                "entity_name",
-                "rating_agency",
-            ]
-        ).sum()
-    )
-
-    null_type_codes = int(df["entity_type_code"].isna().sum())
-
-    print("Cobertura 100%     :", period_coverage_ok)
-    print("Duplicados lógicos :", duplicates)
-    print("Tipos sin código   :", null_type_codes)
-
-    unmapped_labels = sorted(
-        df.loc[df["entity_type_code"].isna(), "entity_type"]
-        .dropna()
-        .astype(str)
-        .unique()
-        .tolist()
-    )
-    if unmapped_labels:
-        print("Etiquetas históricas sin código actual SBS:")
-        for label in unmapped_labels:
-            print("  -", label)
-
-    summary = (
-        df.groupby(
-            ["period_code", "period", "period_date"],
-            dropna=False,
-        )
-        .agg(
-            ratings=("rating", "size"),
-            entities=("entity_name", "nunique"),
-            entity_types=("entity_type", "nunique"),
-            agencies=("rating_agency", "nunique"),
-        )
-        .reset_index()
-        .sort_values("period_code")
-    )
-
-    summary_path = output_dir / "resumen_historico_clasificaciones.csv"
-    summary.to_csv(summary_path, index=False, encoding="utf-8-sig")
-
-    report["tests"]["load_history"] = {
-        "ok": period_coverage_ok and duplicates == 0,
-        "rows": int(len(df)),
-        "periods": int(df["period_code"].nunique()),
-        "period_coverage_ok": period_coverage_ok,
-        "logical_duplicates": duplicates,
-        "null_entity_type_codes": null_type_codes,
-        "unmapped_entity_type_labels": unmapped_labels,
-        "summary_csv": str(summary_path),
-    }
-
-    section("5. MUESTRA")
-    cols = [
-        "period_code",
-        "entity_type_code",
-        "entity_type",
-        "entity_name",
-        "rating_agency",
-        "rating",
-        "trend",
-    ]
-    print(df[cols].head(30).to_string(index=False))
-
-    report["overall_ok"] = all(
-        item.get("ok") is True
-        for item in report["tests"].values()
-    )
-    report["finished_at"] = datetime.now().isoformat(timespec="seconds")
-
-    report_path = output_dir / "resultado_historico_clasificaciones.json"
-    report_path.write_text(
-        json.dumps(report, indent=2, ensure_ascii=False, default=str),
-        encoding="utf-8",
-    )
-
-    section("RESULTADO FINAL")
-    for name, result in report["tests"].items():
-        print(f"{name:<30} {'OK' if result.get('ok') else 'FALLÓ'}")
-
-    print("\nOVERALL:", report["overall_ok"])
-    print("Datos   :", data_root)
-    print("Reporte :", report_path)
-    print("Resumen :", summary_path)
-
-    if report["overall_ok"]:
-        print(
-            "\nCONFIRMADO: todo el histórico SBS de clasificaciones quedó "
-            "sincronizado y disponible localmente."
-        )
-        return 0
-
-    return 1
+    query = {k: v for k, v in {'periodos': args.periodos, 'desde': args.desde, 'hasta': args.hasta}.items() if v is not None}
+    sheets = {}
+    for name in dict.fromkeys(args.datasets):
+        provider = source(DATASETS[name])
+        if not args.load_only:
+            requests = list(provider.plan_sync(**query))
+            expected = {r.period_key for r in requests}
+            if not expected:
+                raise ValueError('La selección no contiene períodos publicados.')
+            result = provider.sync(**query, force=args.force, keep_raw=args.keep_raw)
+            print(result)
+            if result.failed or result.unavailable:
+                print('Captura incompleta: no se exporta el reporte.')
+                return 1
+            if not args.no_second_sync:
+                second = provider.sync(**query, keep_raw=args.keep_raw)
+                if second.skipped_existing != len(expected) or second.downloaded or second.failed or second.unavailable:
+                    raise ValueError('La segunda sincronización no reutilizó toda la captura.')
+        else:
+            entries = provider.storage.manifest.data['entries']
+            valid_codes = [k for k, v in entries.items() if v.get('status') == 'validated'
+                           and v.get('contract_version', '1') == provider.contract_version
+                           and provider.storage.period_matches(v['partition_key'], k, v.get('content_hash'))]
+            from fuentes_financieras.providers.sbs._clasificaciones_parser import period_date
+            import pandas as pd
+            catalog = pd.DataFrame({'period_code': valid_codes, 'period_date': [period_date(k) for k in valid_codes]})
+            expected = set(provider.filter_loaded(catalog, **query).period_code.astype(str))
+            if args.periodos and expected != set(args.periodos):
+                raise ValueError('Faltan períodos solicitados o requieren migración en caché.')
+        data = provider.load(**query)
+        if not expected or data.empty or set(data.period_code.astype(str)) != expected:
+            raise ValueError('La caché no contiene toda la selección validada bajo el contrato actual.')
+        report = data.copy()
+        if 'trend' in report:
+            report['trend'] = report.trend.replace({'up': 'Subió', 'down': 'Bajó'})
+            report['rating_kind'] = report.rating_kind.replace({'institutional_summary': 'Clasificación institucional del resumen'})
+            report['trend_basis'] = report.trend_basis.replace({'published_change_vs_previous_classification': 'Cambio respecto de la clasificación anterior'})
+        if 'document_status' in report:
+            report['document_status'] = report.document_status.replace({'linked_not_downloaded': 'Enlace publicado; documento pendiente de descargar', 'link_missing': 'Enlace ausente'})
+        report['data_quality_flags'] = report.data_quality_flags.str.replace('source_report_link_missing', 'Enlace al informe ausente', regex=False).str.replace('source_change_symbol_unrecognized', 'Símbolo de cambio sin interpretación', regex=False)
+        sheets[name] = report
+    path = args.output_dir.resolve() / 'clasificaciones_informes.xlsx'
+    write_report(path, sheets)
+    print(f'Filas: {sum(len(d) for d in sheets.values())}; reporte: {path}')
+    return 0
 
 
-def main(argv=None) -> int:
+def main(argv=None):
     try:
         return run(argv)
     except KeyboardInterrupt:
         return 130
-    except Exception:
-        section("EJECUCIÓN FALLIDA")
-        traceback.print_exc()
+    except Exception as exc:
+        print(f'Error: {type(exc).__name__}: {exc}')
         return 1
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())
