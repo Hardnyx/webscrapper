@@ -14,6 +14,11 @@ from fuentes_financieras.registry import get_provider
 from fuentes_financieras.runtime import resolve_data_root
 
 LABELS = {
+    'field_kind': 'Tipo de campo', 'field_label': 'Etiqueta original', 'value_raw': 'Valor original',
+    'normalized_value': 'Valor normalizado', 'temporal_role': 'Vigencia indicada en el bloque',
+    'extraction_status': 'Estado de extracción', 'evidence_text': 'Texto de evidencia',
+    'page_number': 'Página del PDF', 'pdf_sha256': 'SHA-256 del PDF',
+
     'period_code': 'Código período SBS', 'year': 'Año', 'semester': 'Semestre',
     'rating_agency': 'Clasificadora', 'rating': 'Clasificación publicada',
     'summary_rating': 'Clasificación del resumen', 'rating_kind': 'Tipo de clasificación',

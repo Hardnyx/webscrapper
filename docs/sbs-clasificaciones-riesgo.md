@@ -17,7 +17,7 @@ El resumen conserva la clasificación tal como aparece en la SBS; no equivale a 
 
 Cada referencia conserva `report_url`, `report_agency_code`, `report_period_code`, `report_file_number`, `report_version` y `report_id`, compuesto por los cuatro identificadores SBS. Se exige HTTPS, el destino oficial y parámetros únicos, numéricos y del período solicitado. Una URL ausente conserva la clasificación con aviso; un enlace de otro período o destino desconocido genera un fallo. Un mismo documento puede estar asociado a varias entidades: no se deduplican sus asociaciones por URL.
 
-El inventario no descarga ni analiza los documentos. `document_status=linked_not_downloaded` indica únicamente que la SBS publicó un enlace, no que se haya comprobado la disponibilidad o el contenido del archivo. Los ratings de depósitos, las perspectivas y las fechas de comité requieren una fase posterior de lectura de informes con evidencia de página y texto.
+El inventario no descarga ni analiza los documentos. `document_status=linked_not_downloaded` indica únicamente que la SBS publicó un enlace, no que se haya comprobado la disponibilidad o el contenido del archivo. Los ratings de depósitos, las perspectivas y las fechas de comité se pueden extraer mediante el módulo independiente de [documentos de riesgo](sbs-documentos-riesgo.md), dentro de sus formatos y alcance comprobados.
 
 ## Ejecutar
 

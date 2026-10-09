@@ -38,6 +38,7 @@ python scripts/sync_participacion.py --desde 2026-08
 python scripts/sync_riesgo_cambiario.py --desde 2026-07
 python scripts/sync_riesgo_cambiario.py --datasets capital --desde 2026-08 --tipos C R
 python scripts/sync_clasificaciones_riesgo.py
+python scripts/sync_documentos_riesgo.py --periodos 202601 --entidad ALFIN
 python scripts/sync_clasificaciones_riesgo.py --datasets clasificaciones informes --periodos 202602 202601
 python scripts/sync_universo_depositos.py
 python scripts/sync_referencias_tasas_pasivas.py --desde 2026-10-05 --hasta 2026-10-06
@@ -73,6 +74,7 @@ fuentes-sync-universe --help
 | SBS referencias de tasas pasivas | `source("pe.sbs.tasas_pasivas_mercado")` | TIPMN/TIPMEX y FTIPMN/FTIPMEX; promedios por producto desde tasas locales |
 | SBS universo de depósitos | `source("pe.sbs.universo_depositos")` | Implementado; capturas fechadas y correspondencias locales |
 | SMV valores cuota | `source("pe.smv.fondos_mutuos.valores_cuota")` | Implementado; capturas e histórico EVCP, todos los fondos y series |
+| SBS documentos de riesgo | `source("pe.sbs.documentos_riesgo")` | PDF con huella y evidencia por página; formatos de portada comprobados, casos pendientes explícitos |
 | SBS inventario de informes | `source("pe.sbs.informes_riesgo")` | Enlaces, códigos y versiones por entidad/clasificadora; documentos pendientes de descargar |
 | SBS clasificaciones históricas | `source("pe.sbs.clasificaciones_riesgo")` | Resumen institucional semestral, cambios publicados y enlaces a informes |
 | SBS tipo de cambio contable USD/PEN | `providers.sbs.tipo_cambio_contable` | Implementado; funciones propias |
@@ -131,6 +133,7 @@ python -m compileall -q src scripts apps tools
 - [Arquitectura y almacenamiento](docs/architecture.md)
 - [Comandos y aplicaciones](docs/usage.md)
 - [Clasificaciones históricas SBS](docs/sbs-clasificaciones-riesgo.md)
+- [Documentos y evidencia de ratings](docs/sbs-documentos-riesgo.md)
 - [Migración desde las rutas anteriores](docs/migration.md)
 
 El histórico completo se ejecuta primero localmente. Este repositorio no
