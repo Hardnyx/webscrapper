@@ -12,6 +12,32 @@ MOODYS_YEAR_END = ('Cabe indicar que, a nivel de concentración de principales d
                   'se evidencia un incremento en la concentración de los 20 principales '
                   'depositantes al pasar a 22.30% al cierre de 2025, desde 20.72% '
                   'al término de 2024.')
+HUANCAYO = ('Los 10 principales depositantes representaron el 1.7% del total de depósitos de la CMAC Huancayo , '
+            'mientras que los 20 principales concentraron el 2.4%, consolidando la tendencia decreciente '
+            'a lo largo del periodo bajo análisis (2.4% y 3.2% respectivamente al cierre de diciembre 2024 ), '
+            'ubicándose por debajo de las señales internas de alerta, apetito y capacidad.')
+
+
+def test_jcr_historical_respectively_keeps_only_explicitly_dated_values():
+    fields, coverage = extract_body_evidence(['Portada', HUANCAYO], agency_code='001196')
+    figures = [f for f in fields if f['field_kind'] == 'deposit_concentration']
+    assert [(f['top_depositors'], f['normalized_value']) for f in figures] == [(10, '2.4'), (20, '3.2')]
+    assert all(f['observation_period'] == '2024-12' and f['page_number'] == 2
+               and f['denominator_basis'] == 'total_deposits' for f in figures)
+    assert any(f['extraction_status'] == 'needs_review' and '1.7%' in f['evidence_text'] for f in fields)
+    assert next(c for c in coverage if c['topic'] == 'deposit_concentration')['recognized_count'] == 2
+    assert not concentration_fields(HUANCAYO, agency_code='000406')
+
+
+@pytest.mark.parametrize('old,new', [
+    ('respectivamente', ''), ('diciembre 2024', ''), ('diciembre', 'desconocido'),
+    ('2024', '2101'), ('3.2%', '103.2%'), ('1.7%', '1,7.2%'),
+    ('Los 10', 'Los 20'), ('20 principales', '5 principales'),
+    ('total de depósitos', 'total de activos'), ('representaron', 'no representaron'),
+    ('representaron', 'representarían'),
+])
+def test_jcr_historical_comparison_rejects_missing_binding_and_ambiguity(old, new):
+    assert not concentration_fields(HUANCAYO.replace(old, new), agency_code='001196')
 
 
 def test_historical_jcr_bank_denominator_with_pdf_spacing():

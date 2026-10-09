@@ -108,3 +108,18 @@ Se admite el párrafo histórico JCR cuyo denominador dice «total de depósitos
 Estas reglas no asignan la fecha de portada a un porcentaje sin fecha. Las cifras de MicroRate de los 20 principales depositantes sin período en el pasaje continúan como candidatas para revisión. Tampoco se extraen los límites internos ni porcentajes comparativos de una oración vecina. La concentración sigue siendo cobertura parcial de informes, no una serie completa para todas las entidades.
 
 Validación con el código del repositorio y los PDF completos previamente guardados: Alfin/JCR `001196:202502:3:1`, página 16, produjo 14,7% y 17,7% para los 10 y 20 principales a junio de 2025; BanBif/Moody’s `000406:202601:48:1`, página 4, produjo 22,30% a diciembre de 2025 y 20,72% a diciembre de 2024 para los 20 principales. El 22,30% de BanBif ya figuraba por separado en la página 2. Se bloqueó el transporte durante el reprocesamiento para comprobar el uso de PDF locales íntegros y se verificaron las exportaciones `--load-only`. Los archivos de validación permanecieron fuera del repositorio.
+
+### Comparación histórica JCR de CMAC Huancayo
+
+La regla adicional reconoce el formato comprobado de Huancayo que publica los porcentajes de los 10 y 20 principales depositantes y añade una comparación «respectivamente al cierre de diciembre 2024». Se asignan únicamente los dos porcentajes históricos a los grupos publicados, conservando el denominador total de depósitos, el mes explícito, la página y la oración completa. Los porcentajes actuales de esa oración carecen de fecha explícita y permanecen en la evidencia candidata. La regla exige el vínculo «respectivamente», orden creciente de grupos, fechas y porcentajes válidos; todavía no generaliza este formato a otras entidades.
+
+Se descargaron cuatro PDF oficiales mediante `pe.sbs.documentos_riesgo`, sin modificar su inventario ni introducir descargas en el repositorio:
+
+| Entidad / clasificadora | Referencia SBS | Resultado de concentración fechada |
+| --- | --- | --- |
+| CMAC Huancayo / JCR | `001196:202601:7:1` | Página 14: 10 principales, 2,4%; 20 principales, 3,2%; diciembre de 2024. |
+| CMAC Arequipa / JCR | `001196:202601:5:1` | Pasajes candidatos; sin fecha explícita vinculada a las cifras reconocibles. |
+| CMAC Cusco / JCR | `001196:202601:6:1` | Pasajes candidatos; sin fecha explícita vinculada a las cifras reconocibles. |
+| Interbank / Apoyo | `000408:202601:43:1` | Pasaje candidato; no se asigna el año de otra métrica al porcentaje de concentración. |
+
+Se reprocesaron los cuatro PDF desde caché con el transporte deshabilitado y se verificó la exportación Excel. Solo las dos observaciones históricas de Huancayo resultaron reconocidas por las reglas de concentración. Esto amplía la cobertura comprobada, sin convertir la ausencia de una extracción en ausencia del dato financiero.

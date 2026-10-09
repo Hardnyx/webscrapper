@@ -55,6 +55,30 @@ def concentration_fields(text, *, agency_code):
                     value_raw=raw+'%', normalized_value=str(value), unit='percent', top_depositors=int(n),
                     observation_period=f'{observed_year}-12', denominator_basis='unspecified_in_excerpt',
                     temporal_role='dated_observation', extraction_status='extracted', evidence_text=match[0]))
+    if agency_code == '001196':
+        pattern = (r'Los (\d+) principales depositantes representaron el ([\d.,]+)% del total de depósitos '
+                   r'de la CMAC Huancayo\s*, mientras que los (\d+) principales concentraron el ([\d.,]+)%, '
+                   r'consolidando la tendencia decreciente a lo largo del periodo bajo análisis '
+                   r'\(([\d.,]+)% y ([\d.,]+)% respectivamente al cierre de ([a-z]+) (?:de )?(\d{4})\s*\)')
+        for match in re.finditer(pattern, text, re.I):
+            n1, current1, n2, current2, previous1, previous2, month, year = match.groups()
+            # "Respectively" binds the dated values to the preceding ordered depositor counts.
+            if month.lower() not in MONTHS or not 1900 <= int(year) <= 2100:
+                continue
+            if not 1 <= int(n1) < int(n2) <= 1000:
+                continue
+            values = (current1, current2, previous1, previous2)
+            if any(not re.fullmatch(r'\d+(?:[.,]\d+)?', raw) for raw in values):
+                continue
+            if any(not 0 <= float(raw.replace(',', '.')) <= 100 for raw in values):
+                continue
+            # Current values have no explicit date in this sentence and stay review candidates.
+            for n, raw in ((n1, previous1), (n2, previous2)):
+                found.append(dict(field_kind='deposit_concentration', field_label='Principales depositantes',
+                    value_raw=raw+'%', normalized_value=str(float(raw.replace(',', '.'))), unit='percent',
+                    top_depositors=int(n), observation_period=f'{year}-{MONTHS[month.lower()]:02d}',
+                    denominator_basis='total_deposits', temporal_role='dated_observation',
+                    extraction_status='extracted', evidence_text=match[0]))
     return found
 
 
