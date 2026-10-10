@@ -188,3 +188,69 @@ def test_cli_offline_evidence_report_and_corrupt_pdf_rejection(tmp_path,monkeypa
     monkeypatch.setattr(documents.transport,'request',lambda *a,**kw:SimpleNamespace(content=pdf(),url=URL))
     assert cli.main([a for a in args if a!='--load-only']+['--redownload'])==0
     assert path.exists()
+
+
+AAI_DEPOSITS = '''Ratings Actual Anterior
+Fortaleza Financiera A+ A
+Depósitos CP CP-1+ (pe) CP-1+ (pe)
+Depósitos LP AAA (pe) AAA (pe)
+Certificado de Depósitos Negociables
+Segundo Programa CP-1+ (pe) CP-1+ (pe)
+Con información financiera auditada a diciembre 2025.
+Clasificaciones otorgadas en Comités de fechas 26/03/2026 y
+29/09/2025.
+Perspectiva
+Estable'''
+
+
+def test_aai_local_deposit_scales_remain_distinct_from_certificates_and_outlook():
+    fields = extract_cover_fields(AAI_DEPOSITS, agency_code='000408')
+    deposits = [f for f in fields if f['field_kind'] in ('short_term_deposits','long_term_deposits')]
+    assert [(f['field_kind'],f['value_raw'],f['temporal_role']) for f in deposits] == [
+        ('short_term_deposits','CP-1+ (pe)','current'), ('short_term_deposits','CP-1+ (pe)','previous'),
+        ('long_term_deposits','AAA (pe)','current'), ('long_term_deposits','AAA (pe)','previous')]
+    assert all(f['normalized_value'] == f['value_raw'] for f in deposits)
+    assert len([f for f in fields if f['field_kind']=='outlook']) == 1
+    assert not any(f['field_kind'].endswith('deposits_outlook') for f in fields)
+    dates = [f for f in fields if f['field_kind']=='committee_date']
+    assert {f['normalized_value'] for f in dates} == {'2026-03-26','2025-09-29'}
+    assert all(f['extraction_status']=='needs_review' and f['temporal_role']=='unspecified' for f in dates)
+
+
+@pytest.mark.parametrize('text', [
+    AAI_DEPOSITS.replace('Depósitos CP','Certificados CP').replace('Depósitos LP','Bonos LP'),
+    AAI_DEPOSITS.replace('(pe)','(us)'),
+    AAI_DEPOSITS.replace('CP-1+ (pe) CP-1+ (pe)','CP-1+ (pe)').replace('AAA (pe) AAA (pe)','AAA (pe)'),
+    AAI_DEPOSITS.replace('Ratings Actual Anterior','Historial de calificaciones'),
+    AAI_DEPOSITS.replace('Ratings Actual Anterior','Ratings Actual Anterior\nRatings Actual Anterior'),
+])
+def test_aai_does_not_promote_wrong_instruments_scales_or_incomplete_pairs(text):
+    fields = extract_cover_fields(text, agency_code='000408')
+    assert not any(f['field_kind'] in ('short_term_deposits','long_term_deposits') for f in fields)
+
+
+def test_jcr_alternative_labels_and_inline_current_committee():
+    text = '''Rating Actual* Anterior**
+Fortaleza Financiera A- A-
+Depósitos a Corto Plazo CP1- CP1-
+Depósitos a Largo Plazo A A-
+2do Programa de Certificados de Depósitos Negociables CP1- CP1-
+*Información auditada al 31 de diciembre de 2025. Aprobado en comité de 27-03-2026.
+**Información no auditada al 30 de junio de 2025. Aprobado en comité de 15-09-2025.
+Perspectiva Estable Estable'''
+    fields = extract_cover_fields(text, agency_code='001196')
+    assert [(f['value_raw'],f['temporal_role']) for f in fields if f['field_kind']=='long_term_deposits'] == [('A','current'),('A-','previous')]
+    assert len([f for f in fields if f['field_kind']=='short_term_deposits']) == 2
+    dates = [f for f in fields if f['field_kind']=='committee_date']
+    assert len(dates)==1 and dates[0]['normalized_value']=='2026-03-27'
+    assert dates[0]['extraction_status']=='extracted' and '**Información' not in dates[0]['evidence_text']
+    assert not any(f['field_kind']=='long_term_deposits' for f in extract_cover_fields(text,agency_code='000408'))
+
+
+def test_jcr_committee_date_is_not_borrowed_from_previous_note():
+    text = '''Rating Actual* Anterior**
+Depósitos a Largo Plazo A A-
+*Información auditada al 31 de diciembre de 2025.
+**Información a junio de 2025. Aprobado en comité de 15-09-2025.
+Perspectiva Estable Estable'''
+    assert not any(f['field_kind']=='committee_date' for f in extract_cover_fields(text,agency_code='001196'))

@@ -134,3 +134,20 @@ Se estructuran dos bloques completos de texto, conservando página, pasaje y has
 La cobertura de `ownership_support` cuenta los campos reconocidos en estos bloques y conserva los pasajes candidatos para revisión. La extracción describe afirmaciones publicadas por la clasificadora, sin verificación registral ni resolución automática de identidades. Las tablas incompletas, repetidas en una página, con sumas inconsistentes o más de dos accionistas permanecen fuera del formato reconocido. Los documentos o páginas distintos no se reconcilian automáticamente.
 
 Validación con PDF reales: CMAC Huancayo/JCR `001196:202601:7:1`, página 24, publicó Municipalidad Provincial de Huancayo con 81.421.830 acciones y 92,33%, y Corporación Interamericana de Inversiones (BID Invest) con 6.763.841 acciones y 7,67%. BanBif/Moody’s `000406:202601:48:1`, página 2, publicó capitalización del 70% en 2025 correspondiente a utilidades del ejercicio 2024. La mención de 99,9% en el apartado de grupo económico de Alfin no se convierte en participación del banco: el sujeto y su relación con otros porcentajes requieren revisión.
+
+### Formatos adicionales de depósitos y fechas de comité
+
+La tabla actual/anterior de JCR admite también las etiquetas «Depósitos a Corto Plazo» y «Depósitos a Largo Plazo», conservando la etiqueta publicada. Apoyo admite «Depósitos CP» y «Depósitos LP» y las escalas locales con sufijo `(pe)`, como `CP-1+ (pe)` y `AAA (pe)`. Se conserva la notación literal: no se equiparan las escalas de distintas clasificadoras. Los certificados negociables y bonos no se transforman en ratings de depósitos. Se requiere un encabezado único actual/anterior y el par completo de valores dentro del bloque de tabla; sufijos locales desconocidos no se recortan para extraer un rating parcial.
+
+En JCR se reconoce la fecha de comité de la nota de información actual aunque comparta línea con ella; el bloque termina antes de la nota anterior. En Apoyo se conservan las fechas situadas tanto en la línea del encabezado como en su continuación. Si aparecen dos comités sin asignación explícita a columnas, ambos mantienen `needs_review` y vigencia no especificada. La perspectiva general publicada sigue siendo un campo de informe y no se replica como perspectiva de cada depósito.
+
+Validación con cuatro PDF completos en caché, usando el proveedor del repositorio con el transporte deshabilitado, y exportaciones `--load-only`:
+
+| Informe | Corto plazo actual / anterior | Largo plazo actual / anterior | Fecha de comité |
+| --- | --- | --- | --- |
+| Interbank / Apoyo `000408:202601:43:1` | `CP-1+ (pe)` / `CP-1+ (pe)` | `AAA (pe)` / `AAA (pe)` | 26/03/2026 y 29/09/2025, sin asignación temporal. |
+| Huancayo / JCR `001196:202601:7:1` | `CP1-` / `CP1-` | `A` / `A-` | Actual: 27/03/2026. |
+| Cusco / JCR `001196:202601:6:1` | `CP1` / `CP1-` | Mediano y largo: `A` / `A` | Actual: 20/03/2026, nota en la misma línea. |
+| Arequipa / JCR `001196:202601:5:1` | `CP1-` / `CP1-` | Mediano y largo: `AA-` / `AA-` | Actual: 20/03/2026. |
+
+Las 16 clasificaciones de depósitos (actuales y anteriores) conservaron evidencia de portada. Se verificaron cuatro reportes Excel, tablas y filtros, panel congelado y ausencia de cambios de ancho. Los archivos de validación se mantuvieron fuera del repositorio. La cobertura sigue limitada a formatos comprobados; un campo no encontrado no demuestra ausencia de rating.

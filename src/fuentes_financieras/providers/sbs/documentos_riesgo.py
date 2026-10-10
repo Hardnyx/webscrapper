@@ -65,12 +65,23 @@ def extract_cover_fields(text, *, agency_code):
                     add(LABELS[line], line, lines[i+1], line+'\n'+lines[i+1])
     elif agency_code in ('000408', '001196'):
         header = 'Ratings Actual Anterior' if agency_code == '000408' else 'Rating Actual* Anterior**'
-        if header in lines:
+        if lines.count(header) == 1:
             start = lines.index(header)
             stop = next((i for i in range(start+1,len(lines)) if lines[i].startswith(('Con información', '*Información', 'Metodologías'))), len(lines))
             block = ' '.join(lines[start:stop])
-            for label,kind in LABELS.items():
-                pattern = re.escape(label)+r'\d*\s+('+RATING+r')\s+('+RATING+r')(?=\s|$)'
+            labels = dict(LABELS)
+            if agency_code == '001196':
+                labels.update({'Depósitos a Corto Plazo': 'short_term_deposits',
+                               'Depósitos a Largo Plazo': 'long_term_deposits'})
+            else:
+                labels.update({'Depósitos CP': 'short_term_deposits', 'Depósitos LP': 'long_term_deposits'})
+            for label,kind in labels.items():
+                rating = RATING
+                if agency_code == '000408' and kind != 'financial_strength':
+                    # Preserve the agency's local scale suffix and spacing verbatim.
+                    local = r'(?:CP-[123][+-]?|[A-C]{1,3}[+-]?)\s*\(pe\)'
+                    rating = r'(?:'+local+'|'+RATING+')'
+                pattern = re.escape(label)+r'\d*\s+('+rating+r')(?!\s*\()\s+('+rating+r')(?!\s*\()(?=\s|$)'
                 for match in re.finditer(pattern, block):
                     evidence = header+'\n'+match[0]
                     add(kind,label,match[1],evidence)
@@ -114,16 +125,18 @@ def extract_cover_fields(text, *, agency_code):
     elif agency_code == '000408':
         for i,line in enumerate(lines):
             if 'Clasificaciones otorgadas en Comités de fecha' in line and i+1<len(lines):
-                for raw in re.findall(r'\d{1,2}/\d{1,2}/\d{4}',lines[i+1]):
-                    add('committee_date','Comités de fecha',raw,line+'\n'+lines[i+1],role='unspecified',status='needs_review')
+                evidence = line+'\n'+lines[i+1]
+                for raw in re.findall(r'\d{1,2}/\d{1,2}/\d{4}', evidence):
+                    add('committee_date','Comités de fecha',raw,evidence,role='unspecified',status='needs_review')
                     fields[-1]['normalized_value']=normalized_date(raw)
     elif agency_code == '001196':
         for i,line in enumerate(lines):
             if line.startswith('*Información') and not line.startswith('**') and i+1<len(lines):
-                match=re.fullmatch(r'Aprobado en comité de (\d{1,2}-\d{1,2}-\d{4})\.',lines[i+1])
-                if match:
+                stop=next((j for j in range(i+1,len(lines)) if lines[j].startswith(('**','Perspectiva','Metodologías'))),len(lines))
+                evidence=' '.join(lines[i:stop])
+                for match in re.finditer(r'Aprobado en comité de (\d{1,2}-\d{1,2}-\d{4})\.',evidence):
                     iso=normalized_date(match[1])
-                    add('committee_date','Aprobado en comité',match[1],line+'\n'+lines[i+1],status='extracted' if iso else 'needs_review')
+                    add('committee_date','Aprobado en comité',match[1],evidence,status='extracted' if iso else 'needs_review')
                     fields[-1]['normalized_value']=iso
     # Repeated values are not silently reconciled across potentially different instruments.
     for field in fields:
@@ -169,7 +182,7 @@ def parse_document(content, *, reference, retrieved_at):
 
 
 class RiskDocumentsProvider(DatasetProvider):
-    parser_version='2026-10-10.1'
+    parser_version='2026-10-10.2'
     contract_version='2'
 
     def __init__(self,spec):
