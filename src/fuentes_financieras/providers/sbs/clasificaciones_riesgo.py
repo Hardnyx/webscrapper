@@ -273,6 +273,18 @@ class RiskRatingsProvider(DatasetProvider):
     def available_periods(self) -> list[dict]:
         return self.client.list_periods()
 
+    def plan_offline(self, *, periodos=None, **query):
+        if periodos is None or query:
+            raise InvalidQueryError('La planificación offline de clasificaciones requiere periodos explícitos.')
+        if isinstance(periodos, str):
+            periodos = [periodos]
+        for value in periodos:
+            code = _period_code_from_value(value)
+            year, sem, _, _ = period_parts(code)
+            # Latest publication cannot be discovered offline; use conservative freshness.
+            yield PeriodRequest(code, f'year={year:04d}',
+                                {'periodo': code, 'year': year, 'semester': sem}, mutable=True)
+
     def single_request(
         self,
         *,

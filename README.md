@@ -164,3 +164,5 @@ La [rentabilidad y eficiencia](docs/sbs-rentabilidad.md) conserva ratios de util
 El [tamaño y participación](docs/sbs-participacion.md) conserva importes, posiciones, porcentajes individuales y acumulados publicados, con su universo de comparación.
 
 El [riesgo cambiario](docs/sbs-riesgo-cambiario.md) conserva balance, derivados, delta de opciones y posición global, además del ratio publicado de cajas con el mes del patrimonio efectivo explícito.
+
+La [ejecución conjunta configurable](docs/ejecucion-fuentes.md) permite planificar y sincronizar varios proveedores con un perfil TOML, verificar capturas y generar un reporte de pendientes y fallos. Incluye modos de planificación y verificación offline.

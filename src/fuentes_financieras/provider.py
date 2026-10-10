@@ -302,6 +302,10 @@ class DatasetProvider(ABC):
     def plan_sync(self, **query):
         ...
 
+    def plan_offline(self, **query):
+        """Override when planning normally requires online publication discovery."""
+        yield from self.plan_sync(**query)
+
     @abstractmethod
     def _fetch_period(
         self,
