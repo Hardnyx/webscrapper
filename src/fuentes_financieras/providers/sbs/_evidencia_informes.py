@@ -82,11 +82,62 @@ def concentration_fields(text, *, agency_code):
     return found
 
 
+def ownership_support_fields(text, *, agency_code):
+    """Recognize complete published blocks without resolving legal ownership or guarantees."""
+    found = []
+    if agency_code == '001196':
+        name = r"([A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ(). &'\-]{1,179}?)"
+        integer = r'(\d{1,3}(?:,\d{3})+|\d+)'
+        percent = r'(\d+(?:\.\d+)?)'
+        pattern = (r'Accionistas Acciones Participación \(%\) ' + name + ' ' + integer + ' ' + percent + r'% '
+                   + name + ' ' + integer + ' ' + percent + r'% Total ' + integer + ' ' + percent
+                   + r'% (?=Miembros del Directorio Cargo Condición)')
+        matches = list(re.finditer(pattern, text))
+        if len(matches) == 1:
+            match = matches[0]
+            owner1, count1, percent1, owner2, count2, percent2, total, total_percent = match.groups()
+            counts = [int(raw.replace(',', '')) for raw in (count1, count2, total)]
+            percentages = [float(raw) for raw in (percent1, percent2, total_percent)]
+            valid = (owner1 != owner2 and counts[0] > 0 and counts[1] > 0
+                     and sum(counts[:2]) == counts[2] and percentages[2] == 100
+                     and all(0 < value <= 100 for value in percentages[:2])
+                     and abs(sum(percentages[:2]) - 100) <= 0.011
+                     and all(abs(count / counts[2] * 100 - value) <= 0.0051
+                             for count, value in zip(counts[:2], percentages[:2])))
+            if valid:
+                for owner, count, raw_percent in ((owner1, count1, percent1), (owner2, count2, percent2)):
+                    for kind, raw, value, unit, basis in (
+                        ('shareholder_shares', count, str(int(count.replace(',', ''))), 'shares', ''),
+                        ('shareholder_participation', raw_percent+'%', str(float(raw_percent)), 'percent', 'reported_total_shares'),
+                    ):
+                        found.append(dict(field_kind=kind, field_label=owner, value_raw=raw,
+                            normalized_value=value, unit=unit, denominator_basis=basis,
+                            temporal_role='unspecified', extraction_status='extracted', evidence_text=match[0]))
+    if agency_code == '000406':
+        pattern = (r'→ Respaldo de su principal accionista, lo cual se ha visto reflejado en la '
+                   r'capitalización de utilidades \(([\d.,]+)% de capitalización en el (\d{4}) '
+                   r'correspondiente a las utilidades del ejercicio (\d{4})\)\.')
+        for match in re.finditer(pattern, text):
+            raw, year, earnings_year = match.groups()
+            if not re.fullmatch(r'\d+(?:[.,]\d+)?', raw):
+                continue
+            value = float(raw.replace(',', '.'))
+            if not 0 <= value <= 100 or not 1900 <= int(earnings_year) < int(year) <= 2100:
+                continue
+            found.append(dict(field_kind='earnings_capitalization', field_label='Utilidades capitalizadas',
+                value_raw=raw+'%', normalized_value=str(value), unit='percent',
+                observation_period=year, denominator_basis='earnings_year_'+earnings_year,
+                temporal_role='annual_observation', extraction_status='extracted', evidence_text=match[0]))
+    return found
+
+
 def extract_body_evidence(texts, *, agency_code):
     fields=[];counts={topic:0 for topic in TOPICS};seen=set()
     for page_number,raw in enumerate(texts,1):
         text=re.sub(r'\s+',' ',raw).strip()
         for field in concentration_fields(text,agency_code=agency_code):
+            fields.append(dict(page_number=page_number,**field))
+        for field in ownership_support_fields(text,agency_code=agency_code):
             fields.append(dict(page_number=page_number,**field))
         for topic,pattern in TOPICS.items():
             for match in re.finditer(pattern,text,re.I):
@@ -102,7 +153,9 @@ def extract_body_evidence(texts, *, agency_code):
     coverage=[]
     has_text=any(t.strip() for t in texts)
     for topic in TOPICS:
-        recognized=sum(f['field_kind']=='deposit_concentration' for f in fields) if topic=='deposit_concentration' else 0
+        kinds = {'deposit_concentration': {'deposit_concentration'},
+                 'ownership_support': {'shareholder_shares', 'shareholder_participation', 'earnings_capitalization'}}
+        recognized = sum(f['field_kind'] in kinds.get(topic, set()) for f in fields)
         coverage.append(dict(topic=topic,recognized_count=recognized,candidate_count=counts[topic],
             coverage_status='needs_ocr' if not has_text else 'recognized' if recognized else 'needs_review' if counts[topic] else 'not_found_in_text',
             pages_checked=len(texts),text_pages=sum(bool(t.strip()) for t in texts)))

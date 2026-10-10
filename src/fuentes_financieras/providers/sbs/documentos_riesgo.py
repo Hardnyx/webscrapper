@@ -169,7 +169,7 @@ def parse_document(content, *, reference, retrieved_at):
 
 
 class RiskDocumentsProvider(DatasetProvider):
-    parser_version='2026-10-09.4'
+    parser_version='2026-10-10.1'
     contract_version='2'
 
     def __init__(self,spec):

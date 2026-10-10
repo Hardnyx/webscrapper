@@ -117,3 +117,61 @@ def test_microrate_credit_rating_is_not_a_deposit_rating():
     fields = extract_cover_fields('CALIFICACIÓN PERSPECTIVA\nD+ Estable\nCALIFICACIÓN CREDITICIA', agency_code='000410')
     assert [(f['field_kind'], f['value_raw']) for f in fields] == [('credit_rating', 'D+'), ('credit_rating_outlook', 'Estable')]
     assert not extract_cover_fields('La calificación crediticia es D+ con perspectiva Estable', agency_code='000410')
+
+
+OWNERSHIP_TABLE = ('Accionistas Acciones Participación (%) Municipalidad Provincial de Huancayo '
+                   '81,421,830 92.33% Corporación Interamericana de Inversiones (BID Invest) '
+                   '6,763,841 7.67% Total 88,185,671 100.00% Miembros del Directorio Cargo Condición')
+CAPITALIZATION = ('→ Respaldo de su principal accionista, lo cual se ha visto reflejado en la '
+                  'capitalización de utilidades (70% de capitalización en el 2025 '
+                  'correspondiente a las utilidades del ejercicio 2024).')
+
+
+def test_ownership_table_preserves_names_counts_and_published_percentages():
+    from fuentes_financieras.providers.sbs._evidencia_informes import ownership_support_fields
+    fields = ownership_support_fields(OWNERSHIP_TABLE, agency_code='001196')
+    assert [(f['field_kind'], f['normalized_value']) for f in fields] == [
+        ('shareholder_shares', '81421830'), ('shareholder_participation', '92.33'),
+        ('shareholder_shares', '6763841'), ('shareholder_participation', '7.67')]
+    assert fields[0]['field_label'] == 'Municipalidad Provincial de Huancayo'
+    assert fields[2]['field_label'] == 'Corporación Interamericana de Inversiones (BID Invest)'
+    assert all(f['temporal_role'] == 'unspecified' and 'observation_period' not in f for f in fields)
+    assert not ownership_support_fields(OWNERSHIP_TABLE, agency_code='000406')
+    assert not ownership_support_fields('Además, el accionista mayoritario es Corporación Coril S.A.C. (99.9%),', agency_code='001196')
+
+
+@pytest.mark.parametrize('old,new', [
+    ('88,185,671', '88,185,670'), ('92.33%', '90.33%'), ('7.67%', '9.67%'),
+    ('100.00%', '99.99%'), ('81,421,830', '81.421.830'),
+    ('Accionistas Acciones Participación (%)', 'Accionistas Participación (%)'),
+    ('Miembros del Directorio Cargo Condición', ''),
+    ('Corporación Interamericana de Inversiones (BID Invest)', 'Municipalidad Provincial de Huancayo'),
+])
+def test_ownership_table_rejects_broken_totals_or_missing_structure(old,new):
+    from fuentes_financieras.providers.sbs._evidencia_informes import ownership_support_fields
+    assert not ownership_support_fields(OWNERSHIP_TABLE.replace(old,new), agency_code='001196')
+
+
+def test_repeated_ownership_tables_stay_unresolved():
+    from fuentes_financieras.providers.sbs._evidencia_informes import ownership_support_fields
+    assert not ownership_support_fields(OWNERSHIP_TABLE+' '+OWNERSHIP_TABLE, agency_code='001196')
+
+
+def test_capitalization_uses_explicit_annual_date_and_profit_basis():
+    fields, coverage = extract_body_evidence(['Portada', CAPITALIZATION], agency_code='000406')
+    field = next(f for f in fields if f['field_kind'] == 'earnings_capitalization')
+    assert field['normalized_value'] == '70.0' and field['observation_period'] == '2025'
+    assert field['denominator_basis'] == 'earnings_year_2024' and field['temporal_role'] == 'annual_observation'
+    assert field['page_number'] == 2 and field['evidence_text'] == CAPITALIZATION
+    assert next(c for c in coverage if c['topic'] == 'ownership_support')['recognized_count'] == 1
+    assert any(f['field_kind'] == 'qualitative_ownership_support' for f in fields)
+
+
+@pytest.mark.parametrize('old,new', [
+    ('se ha visto reflejado', 'se espera que se refleje'), ('Respaldo', 'Sin respaldo'),
+    ('70%', '170%'), ('70%', '7,0.0%'), ('2024', '2025'), ('2025', '2101'),
+    ('correspondiente a las utilidades del ejercicio 2024', 'de utilidades'),
+])
+def test_capitalization_rejects_forecasts_invalid_values_and_missing_year(old,new):
+    from fuentes_financieras.providers.sbs._evidencia_informes import ownership_support_fields
+    assert not ownership_support_fields(CAPITALIZATION.replace(old,new), agency_code='000406')

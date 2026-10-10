@@ -55,13 +55,15 @@ def run(argv=None):
     pending=int((fields.extraction_status!='extracted').sum())
     report['extraction_status']=report.extraction_status.replace({'extracted':'Extraído del formato reconocido',
         'needs_review':'Requiere revisión', 'needs_ocr':'Sin texto; requiere OCR', 'unsupported_cover':'Portada sin formato reconocido'})
-    report['temporal_role']=report.temporal_role.replace({'current':'Actual según el bloque fuente','previous':'Anterior según el bloque fuente','unspecified':'Sin asignación temporal','dated_observation':'Observación con mes publicado'})
-    report['unit']=report.unit.replace({'percent':'Porcentaje'})
+    report['temporal_role']=report.temporal_role.replace({'current':'Actual según el bloque fuente','previous':'Anterior según el bloque fuente','unspecified':'Sin asignación temporal','dated_observation':'Observación con mes publicado','annual_observation':'Observación con año publicado; mes no indicado'})
+    report['unit']=report.unit.replace({'percent':'Porcentaje','shares':'Acciones'})
     report['denominator_basis']=report.denominator_basis.replace({'total_deposits':'Total de depósitos',
-        'unspecified_in_excerpt':'No especificado en el pasaje'})
+        'unspecified_in_excerpt':'No especificado en el pasaje','reported_total_shares':'Total de acciones publicado'})
+    report['denominator_basis']=report.denominator_basis.str.replace(r'^earnings_year_(\d{4})$', r'Utilidades del ejercicio \1', regex=True)
     report['field_kind']=report.field_kind.replace({'financial_strength':'Fortaleza financiera','entity_rating':'Clasificación de entidad',
         'issuer_rating':'Clasificación de emisor','short_term_deposits':'Depósitos de corto plazo','medium_long_term_deposits':'Depósitos de mediano y largo plazo',
-        'deposit_concentration':'Concentración de depositantes', 'credit_rating':'Calificación crediticia',
+        'deposit_concentration':'Concentración de depositantes', 'shareholder_shares':'Acciones por accionista',
+        'shareholder_participation':'Participación del accionista', 'earnings_capitalization':'Utilidades capitalizadas', 'credit_rating':'Calificación crediticia',
         'credit_rating_outlook':'Perspectiva de calificación crediticia', 'long_term_deposits':'Depósitos de largo plazo','outlook':'Perspectiva del informe','entity_rating_outlook':'Perspectiva de entidad',
         'issuer_rating_outlook':'Perspectiva de emisor','committee_date':'Fecha de comité','publication_date':'Fecha de publicación','document':'Documento pendiente de extracción'})
     topic_labels={'strategy':'Estrategia', 'ownership_support':'Accionistas y soporte', 'funding_cost':'Costo de fondeo',

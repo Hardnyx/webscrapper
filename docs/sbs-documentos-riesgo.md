@@ -123,3 +123,14 @@ Se descargaron cuatro PDF oficiales mediante `pe.sbs.documentos_riesgo`, sin mod
 | Interbank / Apoyo | `000408:202601:43:1` | Pasaje candidato; no se asigna el año de otra métrica al porcentaje de concentración. |
 
 Se reprocesaron los cuatro PDF desde caché con el transporte deshabilitado y se verificó la exportación Excel. Solo las dos observaciones históricas de Huancayo resultaron reconocidas por las reglas de concentración. Esto amplía la cobertura comprobada, sin convertir la ausencia de una extracción en ausencia del dato financiero.
+
+### Accionistas y soporte publicados en formatos comprobados
+
+Se estructuran dos bloques completos de texto, conservando página, pasaje y hash PDF:
+
+- JCR: tabla de dos accionistas con encabezado `Accionistas Acciones Participación (%)`, fila `Total` y siguiente encabezado de directorio. Cada accionista conserva su nombre literal en la etiqueta, número de acciones (`shareholder_shares`) y participación publicada (`shareholder_participation`). Se exige total de acciones consistente, porcentajes que sumen 100 y concordancia entre cantidades y porcentajes dentro del redondeo de dos decimales. No se calculan participaciones ausentes ni se infiere voto o control. El bloque no tiene fecha propia: `observation_period` permanece vacío y la vigencia es no especificada.
+- Moody’s: viñeta de respaldo del principal accionista reflejado en capitalización de utilidades, con porcentaje, año de capitalización y ejercicio de origen explícitos. `earnings_capitalization` conserva el porcentaje; el período tiene solo el año publicado (`annual_observation`) y el denominador identifica las utilidades del ejercicio publicado. No se añade mes ni importe monetario. La mención no constituye garantía jurídica, compromiso futuro ni calificación independiente de soporte.
+
+La cobertura de `ownership_support` cuenta los campos reconocidos en estos bloques y conserva los pasajes candidatos para revisión. La extracción describe afirmaciones publicadas por la clasificadora, sin verificación registral ni resolución automática de identidades. Las tablas incompletas, repetidas en una página, con sumas inconsistentes o más de dos accionistas permanecen fuera del formato reconocido. Los documentos o páginas distintos no se reconcilian automáticamente.
+
+Validación con PDF reales: CMAC Huancayo/JCR `001196:202601:7:1`, página 24, publicó Municipalidad Provincial de Huancayo con 81.421.830 acciones y 92,33%, y Corporación Interamericana de Inversiones (BID Invest) con 6.763.841 acciones y 7,67%. BanBif/Moody’s `000406:202601:48:1`, página 2, publicó capitalización del 70% en 2025 correspondiente a utilidades del ejercicio 2024. La mención de 99,9% en el apartado de grupo económico de Alfin no se convierte en participación del banco: el sujeto y su relación con otros porcentajes requieren revisión.
