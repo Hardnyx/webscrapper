@@ -7,7 +7,7 @@ import sqlite3
 from .storage import utc_now_iso
 
 COLUMNS = ['Evento', 'Ejecución', 'Detectado UTC', 'Dataset', 'Período', 'Tipo',
-           'Huella anterior', 'Huella actual']
+           'Huella anterior', 'Huella actual', 'Referencia', 'URL', 'Título', 'Fecha publicada', 'Proveedor destino']
 
 
 def observations(planned, coverage):
@@ -32,7 +32,7 @@ def observations(planned, coverage):
 
 
 @contextmanager
-def record_changes(path, run_id, captures):
+def record_changes(path, run_id, captures, references=None):
     """Commit observations only after the consumer has exported its report."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -40,14 +40,17 @@ def record_changes(path, run_id, captures):
     try:
         connection.execute('BEGIN IMMEDIATE')
         version = connection.execute('PRAGMA user_version').fetchone()[0]
-        if version not in (0, 1):
+        if version not in (0, 1, 2):
             raise ValueError('Versión del registro de novedades incompatible.')
         connection.execute('CREATE TABLE IF NOT EXISTS captures '
             '(dataset TEXT, period TEXT, fingerprint TEXT NOT NULL, PRIMARY KEY(dataset, period))')
         connection.execute('CREATE TABLE IF NOT EXISTS events '
             '(id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL, detected TEXT NOT NULL, '
             'dataset TEXT NOT NULL, period TEXT NOT NULL, kind TEXT NOT NULL, previous TEXT, current TEXT NOT NULL)')
-        connection.execute('PRAGMA user_version=1')
+        connection.execute('CREATE TABLE IF NOT EXISTS publication_refs '
+            '(dataset TEXT, reference TEXT, payload TEXT NOT NULL, PRIMARY KEY(dataset, reference))')
+        connection.execute('CREATE TABLE IF NOT EXISTS publication_sources (dataset TEXT PRIMARY KEY)')
+        connection.execute('PRAGMA user_version=2')
         changes = []
         detected = utc_now_iso()
         for (dataset, period), fingerprint in sorted(captures.items()):
@@ -73,6 +76,27 @@ def record_changes(path, run_id, captures):
                 'ON CONFLICT(dataset,period) DO UPDATE SET fingerprint=excluded.fingerprint',
                 (dataset, period, current))
             changes.append(dict(zip(COLUMNS, (cursor.lastrowid, *values))))
+        # Publication events share the durable event sequence with capture revisions.
+        initialized = {r[0] for r in connection.execute('SELECT dataset FROM publication_sources')}
+        for (dataset, reference), payload in sorted((references or {}).items()):
+            current = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+            row = connection.execute('SELECT payload FROM publication_refs WHERE dataset=? AND reference=?',
+                                     (dataset, reference)).fetchone()
+            previous = row[0] if row else None
+            if previous == current:
+                continue
+            kind = ('Referencia actualizada' if previous else 'Referencia nueva observada' if dataset in initialized
+                    else 'Referencia inicial observada')
+            values = (run_id, detected, dataset, '', kind, previous, current)
+            cursor = connection.execute('INSERT INTO events '
+                '(run_id,detected,dataset,period,kind,previous,current) VALUES (?,?,?,?,?,?,?)', values)
+            connection.execute('INSERT INTO publication_refs VALUES (?,?,?) '
+                'ON CONFLICT(dataset,reference) DO UPDATE SET payload=excluded.payload',
+                (dataset, reference, current))
+            extra = (reference, payload['url'], payload['titulo'], payload['fecha_publicada'], payload['proveedor_destino'])
+            changes.append(dict(zip(COLUMNS, (cursor.lastrowid, *values, *extra))))
+        connection.executemany('INSERT OR IGNORE INTO publication_sources VALUES (?)',
+                               [(d,) for d in {k[0] for k in (references or {})}])
         yield changes
         connection.commit()
     except BaseException:

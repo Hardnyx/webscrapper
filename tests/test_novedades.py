@@ -56,11 +56,11 @@ def test_export_failure_rolls_back_existing_state_and_events(tmp_path):
 def test_future_ledger_version_is_not_overwritten(tmp_path):
     path = tmp_path/'changes.sqlite3'
     with sqlite3.connect(path) as conn:
-        conn.execute('PRAGMA user_version=2')
+        conn.execute('PRAGMA user_version=99')
     with pytest.raises(ValueError):
         observe(path,'1',{})
     with sqlite3.connect(path) as conn:
-        assert conn.execute('PRAGMA user_version').fetchone()[0] == 2
+        assert conn.execute('PRAGMA user_version').fetchone()[0] == 99
 
 
 def test_verified_capture_deduplicates_jobs_and_excludes_invalid(tmp_path,monkeypatch):

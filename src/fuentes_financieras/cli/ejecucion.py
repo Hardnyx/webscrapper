@@ -9,6 +9,7 @@ from uuid import uuid4
 import pandas as pd
 
 from fuentes_financieras.ejecucion import read_profile, plan_jobs, execute_jobs
+from fuentes_financieras.descubrimiento import reference_observations
 from fuentes_financieras.novedades import COLUMNS, observations, record_changes
 from fuentes_financieras.registry import get_provider
 from fuentes_financieras.storage import utc_now_iso
@@ -34,9 +35,11 @@ def run(argv=None):
     run_id = utc_now_iso().replace(':', '').replace('+', '_')+'_'+uuid4().hex[:12]
     folder = args.output_dir.resolve()/run_id
     failed_jobs = {job['Trabajo'] for job in summary if job['Estado'] == 'Falló'}
-    captures = observations([job for job in planned if job.name not in failed_jobs], coverage) if not args.solo_plan else {}
+    eligible = [job for job in planned if job.name not in failed_jobs]
+    captures = observations(eligible, coverage) if not args.solo_plan else {}
+    references = reference_observations(eligible, coverage) if not args.solo_plan else {}
     ledger = args.data_root.resolve()/'state'/'novedades.sqlite3'
-    transaction = nullcontext([]) if args.solo_plan else record_changes(ledger, run_id, captures)
+    transaction = nullcontext([]) if args.solo_plan else record_changes(ledger, run_id, captures, references)
     # Export failure rolls back the ledger so a retry still reports the changes.
     with transaction as changes:
         write_report(folder/'ejecucion.xlsx', {'trabajos': pd.DataFrame(summary),
