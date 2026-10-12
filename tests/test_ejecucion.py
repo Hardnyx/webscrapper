@@ -139,7 +139,7 @@ def test_cli_exports_machine_status_and_spanish_excel_without_overwriting(tmp_pa
         payload = json.loads((run/'ejecucion.json').read_text())
         assert payload['codigo_salida'] == 0
         wb = load_workbook(run/'ejecucion.xlsx')
-        assert wb.sheetnames == ['trabajos','capturas']
+        assert wb.sheetnames == ['trabajos','capturas','novedades']
         for ws in wb:
             assert ws.freeze_panes == 'A2' and not ws.column_dimensions
             assert all(t.tableStyleInfo.name == 'TableStyleLight9' for t in ws.tables.values())

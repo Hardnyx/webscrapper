@@ -1,5 +1,6 @@
 """Run a declarative source profile and export requested capture status."""
 import argparse
+from contextlib import nullcontext
 import json
 import os
 from pathlib import Path
@@ -8,6 +9,7 @@ from uuid import uuid4
 import pandas as pd
 
 from fuentes_financieras.ejecucion import read_profile, plan_jobs, execute_jobs
+from fuentes_financieras.novedades import COLUMNS, observations, record_changes
 from fuentes_financieras.registry import get_provider
 from fuentes_financieras.storage import utc_now_iso
 from .universo_depositos import write_report
@@ -31,12 +33,20 @@ def run(argv=None):
     # Each run has its own directory; previous reports are never overwritten.
     run_id = utc_now_iso().replace(':', '').replace('+', '_')+'_'+uuid4().hex[:12]
     folder = args.output_dir.resolve()/run_id
-    write_report(folder/'ejecucion.xlsx', {'trabajos': pd.DataFrame(summary), 'capturas': pd.DataFrame(coverage)})
-    payload = {'version': 1, 'run_id': run_id, 'modo': 'plan' if args.solo_plan else 'cache' if args.solo_cache else 'sync',
-               'codigo_salida': code, 'trabajos': summary, 'capturas': coverage}
-    temporary = folder/'ejecucion.json.tmp'
-    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
-    temporary.replace(folder/'ejecucion.json')
+    failed_jobs = {job['Trabajo'] for job in summary if job['Estado'] == 'Falló'}
+    captures = observations([job for job in planned if job.name not in failed_jobs], coverage) if not args.solo_plan else {}
+    ledger = args.data_root.resolve()/'state'/'novedades.sqlite3'
+    transaction = nullcontext([]) if args.solo_plan else record_changes(ledger, run_id, captures)
+    # Export failure rolls back the ledger so a retry still reports the changes.
+    with transaction as changes:
+        write_report(folder/'ejecucion.xlsx', {'trabajos': pd.DataFrame(summary),
+            'capturas': pd.DataFrame(coverage), 'novedades': pd.DataFrame(changes, columns=COLUMNS)})
+        payload = {'version': 2, 'run_id': run_id, 'modo': 'plan' if args.solo_plan else 'cache' if args.solo_cache else 'sync',
+                   'codigo_salida': code, 'trabajos': summary, 'capturas': coverage, 'novedades': changes}
+        temporary = folder/'ejecucion.json.tmp'
+        temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
+        temporary.replace(folder/'ejecucion.json')
+    print(f'Novedades observadas: {len(changes)}')
     for job in summary:
         print(f"{job['Trabajo']}: {job['Estado']} ({job['Capturas validadas']}/{job['Solicitudes']})")
     print(f'Reporte: {folder / "ejecucion.xlsx"}')
