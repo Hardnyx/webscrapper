@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from .exceptions import StorageError
+from .storage import read_parquet_file
 
 ENV_DATA_ROOT = "FINANCIAL_SOURCES_DATA_ROOT"
 ENV_AUTOMATIZACIONES_ROOT = "AUTOMATIZACIONES_ROOT"
@@ -151,7 +152,7 @@ def _snapshot_store_stats(data_root: Path) -> dict:
             stats["latest_snapshot"] = key.removeprefix("snapshot:")
             stats["latest_snapshot_file"] = candidate
         try:
-            dates = pd.read_parquet(candidate, columns=["value_date"])["value_date"]
+            dates = read_parquet_file(candidate, columns=["value_date"])["value_date"]
             effective = pd.to_datetime(dates, errors="coerce").max()
         except Exception:
             effective = pd.NaT

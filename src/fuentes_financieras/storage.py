@@ -72,6 +72,12 @@ def content_hash(df: pd.DataFrame) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
+def read_parquet_file(path: Path, *, columns=None) -> pd.DataFrame:
+    """Read one physical file without interpreting parent paths as Hive columns."""
+    with Path(path).open('rb') as handle:
+        return pd.read_parquet(handle, columns=columns)
+
+
 class Manifest:
     def __init__(self, path: Path, dataset_id: str):
         self.path = path
@@ -202,7 +208,7 @@ class DatasetStorage:
             return False
 
         try:
-            df = pd.read_parquet(
+            df = read_parquet_file(
                 path,
                 columns=["_period_key"],
             )
@@ -221,7 +227,7 @@ class DatasetStorage:
             return False
         path = self.partition_path(partition_key)
         try:
-            frame = pd.read_parquet(path)
+            frame = read_parquet_file(path)
             selected = frame[frame["_period_key"].astype(str).eq(str(period_key))]
             if selected.empty:
                 return False
@@ -242,7 +248,7 @@ class DatasetStorage:
         incoming["_period_key"] = str(period_key)
 
         if path.exists():
-            existing = pd.read_parquet(path)
+            existing = read_parquet_file(path)
             if "_period_key" not in existing.columns:
                 raise StorageError(
                     f"Partición antigua sin _period_key: {path}"
@@ -291,7 +297,7 @@ class DatasetStorage:
         frames = []
         for path in files:
             try:
-                frames.append(pd.read_parquet(path))
+                frames.append(read_parquet_file(path))
             except Exception as exc:
                 raise StorageError(
                     f"Lectura Parquet fallida: {path}"

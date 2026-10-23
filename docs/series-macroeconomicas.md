@@ -128,3 +128,5 @@ Se adaptó Bundesbank a su CSV actual identificado por clave, con separador coma
 Esta es la primera integración del conjunto: los pendientes de la tabla no se presentan como completados. No se modifica el proyecto consumidor, no se instala su calendario de actualización y no se trasladan interfaz, configuración empresarial o datos descargados al repositorio.
 
 Se comprobó además la exportación del comando de series y una ejecución conjunta offline de BCRP, SGS, BCE, Focus y SPF: cinco capturas verificadas y registradas como novedades, sin consultas de red en esa ejecución.
+
+Compatibilidad 0.30.1: la lectura canónica abre cada Parquet como archivo físico, sin inferir columnas Hive desde nombres de carpetas como `year=2026`. Se verificó la suite con pandas 2.2.3 y 3.1.0, incluidos casos con columna `year` nativa. Esto conserva las verificaciones de hash y evita descargas repetidas por columnas agregadas durante la lectura.
