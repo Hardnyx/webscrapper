@@ -60,9 +60,10 @@ Conserva bases sobre saldos/flujos, grupos y ventanas, sin calcular spreads.
 
 Las pruebas son locales y no generan descargas históricas. La compilación de
 Python comprueba sintaxis, pero no certifica las interfaces gráficas ni la
-compilación de ejecutables en Windows. La curva soberana conserva un error
-explícito hasta completar su migración.
+compilación de ejecutables en Windows. La curva soberana dispone de un adaptador POST JSON; el acceso puede ser bloqueado por la fuente y no se declara exitoso por recibir HTTP 200.
 
 `pe.sbs.estados_financieros` publica cuentas mensuales en formato largo y conserva sus originales Excel y notas. No consulta otros proveedores ni calcula ratios. El reporte se escribe en `outputs/estados_financieros/`.
 
 `_excel_mensual.py` concentra descubrimiento de enlaces oficiales, identificación del formato Excel, períodos, transporte y caché. Los parsers de estados financieros y solvencia siguen independientes. El comando de solvencia solicita sus dos datasets explícitamente y escribe en `outputs/solvencia/`.
+
+`providers/_series.py` comparte el contrato de capturas anuales para series públicas. `bancos_centrales.py`, `series_europeas.py`, `mercados_internacionales.py` y `encuestas_publicadas.py` contienen adaptadores independientes, sin importar configuración ni invocar otros proveedores. `cli/series_macro.py` exporta una selección verificada. Los detalles de escala y cobertura están en [series macroeconómicas](series-macroeconomicas.md).

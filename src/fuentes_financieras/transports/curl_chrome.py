@@ -17,6 +17,8 @@ WAF_HARD_MARKERS = (
     "incident id",
     "powered by incapsula",
     "request blocked",
+    "solicitud rechazada",
+    "incumplimiento en las políticas de seguridad",
 )
 
 
@@ -98,12 +100,10 @@ class CurlChromeTransport:
             impersonate="chrome"
         )
 
-    def request(self, method: str, url: str, **kwargs):
+    def request(self, method: str, url: str, *, ajax: bool = True, **kwargs):
         headers = dict(kwargs.pop("headers", {}) or {})
-        headers.setdefault(
-            "X-Requested-With",
-            "XMLHttpRequest",
-        )
+        if ajax:
+            headers.setdefault("X-Requested-With", "XMLHttpRequest")
 
         response = self.session.request(
             method,

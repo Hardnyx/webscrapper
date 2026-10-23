@@ -166,3 +166,7 @@ El [tamaño y participación](docs/sbs-participacion.md) conserva importes, posi
 El [riesgo cambiario](docs/sbs-riesgo-cambiario.md) conserva balance, derivados, delta de opciones y posición global, además del ratio publicado de cajas con el mes del patrimonio efectivo explícito.
 
 La [ejecución conjunta configurable](docs/ejecucion-fuentes.md) permite planificar y sincronizar varios proveedores con un perfil TOML, verificar capturas y generar un reporte de pendientes y fallos. Incluye modos de planificación y verificación offline, además de un registro persistente de novedades sin repetir cambios ya observados. Los inventarios de noticias SBS, informes SBS y comunicados Moody’s registran referencias iniciales, nuevas y actualizadas con enlaces al proveedor que puede procesarlas.
+
+## Series macroeconómicas y de mercado
+
+Los [proveedores de series públicas](docs/series-macroeconomicas.md) amplían el catálogo a BCRP, BCB/Focus, Banxico, Banco Central de Chile, BCE, Eurostat, ONS, BoE, Bundesbank, FRED, Treasury, Yahoo y SPF de Filadelfia. Comparten caché, contratos y perfiles de ejecución, sin reglas de selección ni proyecciones del consumidor. La misma guía documenta la curva SBS, sus pruebas de acceso y los extractores pendientes de adaptación.

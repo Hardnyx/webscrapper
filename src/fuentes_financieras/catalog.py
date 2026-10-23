@@ -292,7 +292,7 @@ CATALOG: dict[str, DatasetSpec] = {
         frequency="daily",
         storage_path="peru/sbs/curva_soberana",
         network_transport="HTTP POST JSON",
-        notes="Adapter para mover la implementación ya validada.",
+        notes="Puntos publicados por fecha, curva y plazo; sin interpolación ni diferenciales.",
     ),
     "pe.smv.fondos_mutuos.valores_cuota": DatasetSpec(
         dataset_id="pe.smv.fondos_mutuos.valores_cuota",
@@ -306,3 +306,28 @@ CATALOG: dict[str, DatasetSpec] = {
         notes="Todas las filas publicadas por fecha de consulta; el proyecto filtra después.",
     ),
 }
+
+
+# Public-source adapters share storage contracts, never consumer report settings.
+SERIES_DATASETS = {
+    'us.fed_filadelfia.spf': ('encuestas_publicadas:PhiladelphiaSpfProvider', 'Federal Reserve Bank of Philadelphia - SPF', 'US', 'estados_unidos/fed_filadelfia/spf'),
+    'pe.bcrp.series': ('bancos_centrales:BcrpProvider', 'BCRPData', 'PE', 'peru/bcrp/series'),
+    'br.bcb.series': ('bancos_centrales:BcbProvider', 'Banco Central do Brasil - SGS', 'BR', 'brasil/bcb/series'),
+    'mx.banxico.series': ('bancos_centrales:BanxicoProvider', 'Banco de México - SIE', 'MX', 'mexico/banxico/series'),
+    'cl.bcch.series': ('bancos_centrales:BcchProvider', 'Banco Central de Chile - BDE', 'CL', 'chile/bcch/series'),
+    'eu.bce.series': ('series_europeas:BceProvider', 'Banco Central Europeo', 'EU', 'europa/bce/series'),
+    'eu.eurostat.series': ('series_europeas:EurostatProvider', 'Eurostat', 'EU', 'europa/eurostat/series'),
+    'uk.ons.series': ('series_europeas:OnsProvider', 'Office for National Statistics', 'GB', 'reino_unido/ons/series'),
+    'uk.boe.series': ('series_europeas:BoeProvider', 'Bank of England', 'GB', 'reino_unido/boe/series'),
+    'de.bundesbank.series': ('series_europeas:BundesbankProvider', 'Deutsche Bundesbank', 'DE', 'alemania/bundesbank/series'),
+    'us.fred.series': ('mercados_internacionales:FredProvider', 'Federal Reserve Bank of St. Louis - FRED', 'US', 'estados_unidos/fred/series'),
+    'us.tesoro.series': ('mercados_internacionales:TreasuryProvider', 'U.S. Department of the Treasury', 'US', 'estados_unidos/tesoro/series'),
+    'global.yahoo.precios': ('mercados_internacionales:YahooProvider', 'Yahoo Finance', None, 'global/yahoo/precios'),
+    'br.bcb.focus': ('mercados_internacionales:FocusProvider', 'Banco Central do Brasil - Focus', 'BR', 'brasil/bcb/focus'),
+}
+for _id, (_class, _title, _country, _path) in SERIES_DATASETS.items():
+    CATALOG[_id] = DatasetSpec(dataset_id=_id,
+        provider_class='fuentes_financieras.providers.'+_class, title=_title, country=_country,
+        organization=_title, frequency='series_native', storage_path=_path,
+        network_transport='HTTPS verificado + API/CSV',
+        notes='Series explícitas, capturas anuales revisables, valores nulos y escala de fuente; sin proyecciones calculadas ni reglas de inversión.')
